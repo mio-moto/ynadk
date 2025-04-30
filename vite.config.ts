@@ -55,10 +55,7 @@ const fixSourceMaps = (): Plugin => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  resolve: {
-    // otherwise causes an issue with @tanstack/react-virtual
-    preserveSymlinks: true,
-  },
+  base: "./",
   plugins: [
     tsconfigPaths(),
     linaria({
