@@ -1,0 +1,182 @@
+import { useMemo, type FC, type HTMLProps } from 'react'
+import type { DrumKitContext } from './DrumkitContext'
+import { css, cx } from '@linaria/core'
+import { style } from '../../app/style/style'
+import { Button } from '../../components/Button'
+import { Input } from '../../components/Input'
+import { fragments } from '../../app/style/fragments'
+
+const userSettingsClass = css`
+  flex: 1;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-self: stretch;
+
+  grid-column-gap: 120px;
+  grid-row-gap: 5px;
+
+  padding-bottom: 24px;
+  border-bottom: 3px solid ${style.themeColors.text.default};
+
+  > .title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    > .value {
+      ${fragments.textStyle.body.s.regular};
+    }
+  }
+
+  > .name {
+    grid-column: 1 / -1;
+  }
+
+  > .stride {
+    display: flex;
+    justify-content: space-between;
+
+    > .input {
+      padding: auto;
+      max-width: 1rem;
+    }
+  }
+
+  > .channel, > .mode {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  > .bit-depth, > .sample-rate, > .normalize {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+
+    > .actions {
+      display: flex;
+      gap: 8px;
+    }
+  }
+            
+`
+
+export const UserSettings: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext }> = ({ context, className, ...props }) => {
+  const {
+    config: {
+      bitDepth,
+      setBitDepth,
+      changeBitDepth,
+      channels,
+      setChannels,
+      sampleRate,
+      setSampleRate,
+      changeSampleRate,
+      kitName,
+      setKitName,
+      stride,
+      setStride,
+      normalize,
+      setNormalize,
+    },
+    slots: { meta },
+    kits: { count: kitCount },
+  } = context
+
+  const { fileBitDepth, fileChannels, fileSampleRate, kitStride } = useMemo(() => {
+    const usedStride = stride === 0 ? kitCount : stride
+    const usedBitDepth = bitDepth === 'auto' ? meta.bitDepth.max : bitDepth
+    const usedChannels = channels === 'auto' ? (meta.channel.stereo > 0 ? 'stereo' : 'mono') : channels
+    const usedSampleRate = sampleRate === 'auto' ? meta.sampleRate.max : sampleRate
+    return {
+      kitStride: usedStride,
+      fileBitDepth: usedBitDepth,
+      fileChannels: usedChannels,
+      fileSampleRate: usedSampleRate,
+    }
+  }, [meta, bitDepth, channels, sampleRate, kitCount, stride])
+  return (
+    <div className={cx(userSettingsClass, className)} {...props}>
+      <Input placeholder="kit name" value={kitName} onChange={(evt) => setKitName(evt.currentTarget.value)} className="name" />
+
+      <div className="title">
+        <span className="name">.stride</span>
+        <span className="value">{kitStride}</span>
+      </div>
+      <div className="stride">
+        <Button selected={stride === 4} onClick={() => setStride(4)}>
+          4
+        </Button>
+        <Button selected={stride === 6} onClick={() => setStride(6)}>
+          6
+        </Button>
+        <Button selected={stride === 12} onClick={() => setStride(12)}>
+          12
+        </Button>
+        <Input
+          value={stride === 0 ? '' : stride}
+          onChange={(evt) => {
+            if (!Number.isNaN(evt.currentTarget.valueAsNumber)) setStride(evt.currentTarget.valueAsNumber)
+          }}
+          className="input"
+          placeholder="#"
+        />
+        <Button selected={stride === undefined} onClick={() => setStride('auto')}>
+          auto
+        </Button>
+      </div>
+
+      <div className="title">
+        <span className="name">.channel</span>
+        <span className="value">{fileChannels}</span>
+      </div>
+      <div className="channel">
+        <Button selected={channels === 'mono'} onClick={() => setChannels('mono')}>
+          mono
+        </Button>
+        <Button selected={channels === 'stereo'} onClick={() => setChannels('stereo')}>
+          stereo
+        </Button>
+        <Button selected={channels === 'auto'} onClick={() => setChannels('auto')}>
+          auto
+        </Button>
+      </div>
+
+      <div className="title">
+        <span className="name">.sampleRate</span>
+        <span className="value">{fileSampleRate}</span>
+      </div>
+      <div className="sample-rate">
+        <div className="actions">
+          <Button onClick={() => changeSampleRate('increment')}>+</Button>
+          <Button onClick={() => changeSampleRate('decrement')}>-</Button>
+          <Button selected={sampleRate === 'auto'} onClick={() => setSampleRate('auto')}>
+            auto
+          </Button>
+        </div>
+      </div>
+
+      <div className="title">
+        <span className="name">.bitDepth</span>
+        <span className="value">{fileBitDepth}</span>
+      </div>
+      <div className="bit-depth">
+        <div className="actions">
+          <Button onClick={() => changeBitDepth('increment')}>+</Button>
+          <Button onClick={() => changeBitDepth('decrement')}>-</Button>
+          <Button selected={bitDepth === 'auto'} onClick={() => setBitDepth('auto')}>
+            auto
+          </Button>
+        </div>
+      </div>
+      <div className="title">.normalize</div>
+      <div className="normalize">
+        <Button selected={!normalize} onClick={() => setNormalize(false)}>
+          no
+        </Button>
+        <Button selected={normalize} onClick={() => setNormalize(true)}>
+          yes
+        </Button>
+      </div>
+    </div>
+  )
+}
