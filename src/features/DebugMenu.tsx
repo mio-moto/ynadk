@@ -17,9 +17,6 @@ export const DebugPortalContext = createContext<{
 })
 
 export const DebugPortalContextProvider: FC<{ children?: ReactNode }> = ({ children }) => {
-  if (!import.meta.env.DEV) {
-    return
-  }
   const [debugElementsRoot, setDebugElementsRoot] = useState<HTMLElement | null>(null)
   const contextValue = useMemo(
     () => ({
@@ -33,9 +30,6 @@ export const DebugPortalContextProvider: FC<{ children?: ReactNode }> = ({ child
 }
 
 export const Debug: FC<{ children?: ReactNode }> = ({ children }) => {
-  if (!import.meta.env.DEV) {
-    return
-  }
   const { debugElementsRoot } = useContext(DebugPortalContext)
   return debugElementsRoot ? createPortal(children, debugElementsRoot) : null
 }
@@ -71,12 +65,12 @@ const debugMenuClass = css`
     overflow: auto;
     
   }
+
+  
+  ${import.meta.env.DEV ? '' : 'display: none;'}
 `
 
 export const DebugMenu: FC = () => {
-  if (!import.meta.env.DEV) {
-    return
-  }
   const [open, setOpen] = useState(false)
   const debugControlContext = useContext(DebugPortalContext)
 
