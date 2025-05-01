@@ -149,6 +149,8 @@ const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDep
   return cookedAudio
 }
 
+
+const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [...Array(channels).keys().map(_ => bitDepth === 8 ? 64 : 0)]
 export const renderAudioKit = (currentContext: DrumKitContext) => {
   const {
     slots: { slots, meta },
@@ -158,12 +160,12 @@ export const renderAudioKit = (currentContext: DrumKitContext) => {
   const usedSampleRate = sampleRate === 'auto' ? meta.sampleRate.max : sampleRate
   const usedBitDepth = bitDepth === 'auto' ? (meta.bitDepth.max as BitDepth) : bitDepth
   const emptyFile = new WaveFile()
-  emptyFile.fromScratch(usedChannels, usedSampleRate, usedBitDepth.toString(), [0, 0, 0, 0, 0, 0, 0, 0])
+  emptyFile.fromScratch(usedChannels, usedSampleRate, usedBitDepth.toString(), createEmptyFrame(usedBitDepth, usedChannels))
 
   const lastIndex = slots.length - slots.toReversed().findIndex((x) => !!x.file)
-  const collectedFiles = slots.map((x, i) => (i < lastIndex ? (x.file?.wav ?? 'void') : undefined)).filter((x) => !!x)
+  const collectedFiles = slots.map((x, i) => (i < lastIndex ? (x.file?.wav ?? emptyFile) : undefined)).filter((x) => !!x)
 
-  const targetSamples = collectedFiles.map((x) => (x === 'void' ? undefined : cookSample(x, usedChannels, usedBitDepth, usedSampleRate)))
+  const targetSamples = collectedFiles.map((x) => (cookSample(x, usedChannels, usedBitDepth, usedSampleRate)))
   const sampleLength = targetSamples.reduce((a, b) => a + (b?.length ?? 0), 0)
   const audioSamples = new Float64Array(sampleLength)
   let writtenLength = 0
@@ -179,11 +181,6 @@ export const renderAudioKit = (currentContext: DrumKitContext) => {
   result.fromScratch(usedChannels, usedSampleRate, usedBitDepth.toString(), audioSamples)
   let lastCuePoint = 0
   for (const file of targetSamples) {
-    // @TODO: if the cue point renderer does not work, then this might be the fault
-    if (file === undefined) {
-      result.setCuePoint({ position: lastCuePoint, end: null, label: 'atad' })
-      continue
-    }
     const time = (file.length / usedSampleRate / usedChannels) * 1000
     result.setCuePoint({ position: lastCuePoint, end: null, label: 'atad' })
     lastCuePoint += time

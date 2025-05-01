@@ -84,7 +84,7 @@ const useKitAudio = () => {
 }
 
 export const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
-export const octaves = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'] as const
+export const octaves = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B'] as const
 export type Note = (typeof notes)[number]
 export type Octave = (typeof octaves)[number]
 const noteName = (note: Note, octave: Octave) => (note.length > 1 ? (`${note}${octave}` as const) : (`${note}-${octave}` as const))

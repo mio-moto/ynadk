@@ -138,6 +138,9 @@ export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitConte
             const slot = slots[idx]
             const hitsStride = idx % kits.count === 0
             const kitIndex = Math.floor(idx / kits.count) % kitColors.length
+            if(idx >= 128) {
+              return undefined;
+            }
             return (
               <div
                 key={slot.name}
