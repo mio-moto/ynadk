@@ -27,6 +27,7 @@ const appClass = css`
 
     > .title {
       position: relative;
+      margin: 0;
       > .user-guide {
         cursor: pointer;
         position: absolute;

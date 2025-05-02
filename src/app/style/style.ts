@@ -16,12 +16,11 @@ export const globalStyle = css`
     :root {
       ${colorTheme}
 
-      font-family: "${fontName}", system-ui, Avenir, Helvetica, Arial, sans-serif;
-      font-weight: 400;
-      font-size: 24px;
-      font-variant-numeric: tabular-nums lining-nums;
-      text-transform: full-width;
+      font-family: "${fontName}";
 
+      ${fragments.textStyle.body.m.regular};
+      line-height: normal;
+      
       color-scheme: light dark;
       color: ${style.themeColors.text.default};
       background-color: ${style.themeColors.background.default};
@@ -41,12 +40,10 @@ export const globalStyle = css`
     }
 
     * {
-      margin: 0;
-      font-family: "${fontName}", system-ui, Avenir, Helvetica, Arial, sans-serif;
-      font-weight: 400;
-      font-size: 24px;
+      font-family: "${fontName}";
+      ${fragments.textStyle.body.m.regular};
+      line-height: normal;
 
-      
       &:focus {
         outline: none;
       }
