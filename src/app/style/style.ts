@@ -61,13 +61,18 @@ export const globalStyle = css`
     }
 
     a {
-      color: ${style.colors.aqua.primary};
+      color: ${style.themeColors.text.link};
       transition: ${fragments.transition.fast('color')};
       &:hover {
-        color: ${style.colors.aqua[700]};
+        color: ${style.colors.aqua[500]};
       }
 
-      
+      &:visited {
+        color: ${style.colors.aqua[600]};
+        &:hover {
+          color: ${style.colors.aqua[700]};
+        }
+      }
     }
 
     h1 {

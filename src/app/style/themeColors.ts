@@ -9,6 +9,9 @@ export const themeColors = notCss({
   text: notCss({
     default: colors.anthracite[100],
     disabled: colors.anthracite[500],
+    important: colors.teal[400],
+    secondary: colors.ochre[400],
+    link: colors.aqua[100],
   }),
   background: notCss({
     default: '#141414',

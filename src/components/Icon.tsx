@@ -44,7 +44,7 @@ const iconClass = css`
   }
 
   &.size-default {
-    --icon-size: 16px;
+    --icon-size: 20px;
   }
 `
 

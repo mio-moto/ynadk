@@ -9,6 +9,7 @@ export const buttonClass = css`
     inherits: false;
     initial-value: ${style.themeColors.line.default};
   }
+  cursor: pointer;
   padding: 0 8px;
   border-radius: 0px;
   border: 3px solid;

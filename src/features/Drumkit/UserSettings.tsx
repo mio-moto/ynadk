@@ -1,15 +1,15 @@
-import { useMemo, type FC, type HTMLProps } from 'react'
-import type { DrumKitContext } from './DrumkitContext'
 import { css, cx } from '@linaria/core'
+import { type FC, type HTMLProps, useMemo } from 'react'
+import { fragments } from '../../app/style/fragments'
 import { style } from '../../app/style/style'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
-import { fragments } from '../../app/style/fragments'
+import type { DrumKitContext } from './DrumkitContext'
 
 const userSettingsClass = css`
   flex: 1;
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: min-content auto;
   align-self: stretch;
 
   grid-column-gap: 120px;
@@ -32,25 +32,16 @@ const userSettingsClass = css`
     grid-column: 1 / -1;
   }
 
-  > .stride {
-    display: flex;
-    justify-content: space-between;
-
-    > .input {
-      padding: auto;
-      max-width: 1rem;
-    }
-  }
-
   > .channel, > .mode {
     display: flex;
     justify-content: space-between;
+    gap: 8px;
   }
 
-  > .bit-depth, > .sample-rate, > .normalize {
+  > .bit-depth, > .sample-rate, > .normalize, > .stride {
     display: flex;
     justify-content: flex-end;
-    gap: 16px;
+    gap: 8px;
 
     > .actions {
       display: flex;
@@ -75,6 +66,7 @@ export const UserSettings: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
       setKitName,
       stride,
       setStride,
+      changeStride,
       normalize,
       setNormalize,
     },
@@ -99,33 +91,6 @@ export const UserSettings: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
       <Input placeholder="kit name" value={kitName} onChange={(evt) => setKitName(evt.currentTarget.value)} className="name" />
 
       <div className="title">
-        <span className="name">.stride</span>
-        <span className="value">{kitStride}</span>
-      </div>
-      <div className="stride">
-        <Button selected={stride === 4} onClick={() => setStride(4)}>
-          4
-        </Button>
-        <Button selected={stride === 6} onClick={() => setStride(6)}>
-          6
-        </Button>
-        <Button selected={stride === 12} onClick={() => setStride(12)}>
-          12
-        </Button>
-        <Input
-          value={stride === 0 ? '' : stride}
-          onChange={(evt) => {
-            if (!Number.isNaN(evt.currentTarget.valueAsNumber)) setStride(evt.currentTarget.valueAsNumber)
-          }}
-          className="input"
-          placeholder="#"
-        />
-        <Button selected={stride === undefined} onClick={() => setStride('auto')}>
-          auto
-        </Button>
-      </div>
-
-      <div className="title">
         <span className="name">.channel</span>
         <span className="value">{fileChannels}</span>
       </div>
@@ -137,6 +102,18 @@ export const UserSettings: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
           stereo
         </Button>
         <Button selected={channels === 'auto'} onClick={() => setChannels('auto')}>
+          auto
+        </Button>
+      </div>
+
+      <div className="title">
+        <span className="name">.stride</span>
+        <span className="value">{kitStride}</span>
+      </div>
+      <div className="stride">
+        <Button onClick={() => changeStride('increment')}>+</Button>
+        <Button onClick={() => changeStride('decrement')}>-</Button>
+        <Button selected={stride === 'auto'} onClick={() => setStride('auto')}>
           auto
         </Button>
       </div>
@@ -168,6 +145,7 @@ export const UserSettings: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
           </Button>
         </div>
       </div>
+
       <div className="title">.normalize</div>
       <div className="normalize">
         <Button selected={!normalize} onClick={() => setNormalize(false)}>

@@ -201,12 +201,12 @@ export type SampleRate = (typeof sampleRates)[number]
 const bitDepths = [8, 16, 24, 32] as const
 export type BitDepth = (typeof bitDepths)[number]
 
-const useUserConfig = (slots: ReturnType<typeof useSlots>) => {
+const useUserConfig = (slots: ReturnType<typeof useSlots>, kit: ReturnType<typeof useKit>) => {
   const [bitDepth, setBitDepth] = useState<BitDepth | 'auto'>('auto')
   const [channels, setChannels] = useState<'mono' | 'stereo' | 'auto'>('auto')
   const [sampleRate, setSampleRate] = useState<SampleRate | 'auto'>('auto')
   const [kitName, setKitName] = useState<string>('')
-  const [stride, setStride] = useState<number | 'auto'>()
+  const [stride, setStride] = useState<number | 'auto'>('auto')
   const [normalize, setNormalize] = useState(true)
 
   const changeSampleRate = useCallback(
@@ -246,6 +246,17 @@ const useUserConfig = (slots: ReturnType<typeof useSlots>) => {
     [slots],
   )
 
+  const changeStride = useCallback(
+    (direction: 'increment' | 'decrement') => {
+      const change = direction === 'increment' ? +1 : -1
+      setStride((value) => {
+        const currentStride = value === 'auto' ? kit.count : (value ?? 0)
+        return currentStride + change
+      })
+    },
+    [kit],
+  )
+
   return {
     bitDepth,
     setBitDepth,
@@ -259,6 +270,7 @@ const useUserConfig = (slots: ReturnType<typeof useSlots>) => {
     setKitName,
     stride,
     setStride,
+    changeStride,
     normalize,
     setNormalize,
   }
@@ -280,7 +292,7 @@ export const useDrumKit = () => {
   const files = useKitAudio()
   const slots = useSlots(kits.kit, files.files)
   const highlight = useHighlight()
-  const config = useUserConfig(slots)
+  const config = useUserConfig(slots, kits)
   useDragHandler(files.addFile)
 
   const [selectedFile, setSelectedFile] = useState<KitAudioId>()

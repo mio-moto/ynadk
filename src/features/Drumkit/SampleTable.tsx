@@ -1,8 +1,8 @@
-import { useRef, type FC, type HTMLProps } from 'react'
-import { type DrumKitContext, notes, octaves } from './DrumkitContext'
 import { css, cx } from '@linaria/core'
-import { style } from '../../app/style/style'
+import { type FC, type HTMLProps, useRef } from 'react'
 import { fragments } from '../../app/style/fragments'
+import { style } from '../../app/style/style'
+import { type DrumKitContext, notes, octaves } from './DrumkitContext'
 
 const kitColors = [
   style.colors.aqua[200],
@@ -104,10 +104,13 @@ export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitConte
   const {
     slots: { slots, assignFile },
     kits,
+    config: { stride: strideConfig },
     highlight: { highlight, setHighlight },
     selectedFile,
     setSelectedFile,
   } = context
+
+  const stride = strideConfig === 'auto' ? kits.count : strideConfig
 
   const audioRef = useRef<HTMLAudioElement>(null)
   return (
@@ -136,10 +139,10 @@ export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitConte
           {notes.map((_, x) => {
             const idx = y * notes.length + x
             const slot = slots[idx]
-            const hitsStride = idx % kits.count === 0
-            const kitIndex = Math.floor(idx / kits.count) % kitColors.length
-            if(idx >= 128) {
-              return undefined;
+            const hitsStride = idx % stride === 0
+            const kitIndex = Math.floor(idx / stride) % kitColors.length
+            if (idx >= 128) {
+              return undefined
             }
             return (
               <div
@@ -167,7 +170,7 @@ export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitConte
                 }}
               >
                 {(() => {
-                  let kitPos = idx % kits.count
+                  let kitPos = idx % stride
                   for (const element of kits.kit) {
                     kitPos -= element.count
                     if (kitPos < 0) {

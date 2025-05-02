@@ -1,12 +1,15 @@
 import { css } from '@linaria/core'
-import { type FC, useRef } from 'react'
+import { type FC, useRef, useState } from 'react'
+import { fragments } from './app/style/fragments'
+import { style } from './app/style/style'
 import { Button } from './components/Button'
 import { useDrumKit } from './features/Drumkit/DrumkitContext'
 import { DrumKitFiles } from './features/Drumkit/DrumkitFiles'
 import { KitOrder } from './features/Drumkit/KitOrder'
-import { UserSettings } from './features/Drumkit/UserSettings'
 import { SampleTable } from './features/Drumkit/SampleTable'
+import { UserSettings } from './features/Drumkit/UserSettings'
 import { renderAudioKit } from './features/Drumkit/audioRenderer'
+import { UserGuide } from './features/UserGuide'
 
 type UUID = ReturnType<typeof window.crypto.randomUUID>
 const appClass = css`
@@ -21,6 +24,28 @@ const appClass = css`
     justify-content:  center;
     align-items: center;
     gap: 24px;
+
+    > .title {
+      position: relative;
+      > .user-guide {
+        cursor: pointer;
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        top: 0;
+        right: -30px;
+        height: 30px;
+        width: 30px;
+        transform: translate(50%, 50%);
+        border: 2px solid ${style.themeColors.line.default};
+        transition: ${fragments.transition.regular('background-color')};
+
+        &:hover {
+          background-color: ${style.themeColors.background.defaultHover};
+        }
+      }
+    }
 
     > .panels {
       display: flex;
@@ -62,11 +87,19 @@ export const App: FC = () => {
   } = context
   const audioRef = useRef<HTMLAudioElement>(null)
 
+  const [forceUserGuide, setForceUserGuide] = useState(false)
+
   return (
     <div className={appClass}>
+      <UserGuide forceOpen={forceUserGuide} onClose={() => setForceUserGuide(false)} />
       <audio style={{ display: 'none' }} ref={audioRef} />
       <main className="main">
-        <h1>YNADK</h1>
+        <h1 className="title">
+          YNADK{' '}
+          <div className="user-guide" onClick={() => setForceUserGuide(true)}>
+            ?
+          </div>
+        </h1>
         <div className="panels">
           <KitOrder context={context} />
           <div className="center">
