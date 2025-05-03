@@ -194,7 +194,7 @@ export const renderAudioKit = (currentContext: DrumKitContext) => {
   let lastCuePoint = 0
   for (const file of targetSamples) {
     const time = (file.length / sampleRate / channels) * 1000
-    result.setCuePoint({ position: lastCuePoint, end: null, label: 'atad' })
+    result.setCuePoint({ position: lastCuePoint, end: null })
     lastCuePoint += time
   }
   return result

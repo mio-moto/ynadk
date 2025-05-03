@@ -150,12 +150,18 @@ const useSlots = (kit: ReturnType<typeof useKit>['kit'], kitAudio: ReturnType<ty
     [internalSlots, kitAudio, kit, fileAssignment],
   )
 
-  const assignFile = useCallback((id: KitAudioId | undefined, index: number) => {
-    setFileAssignment((value) => {
-      value[index] = id
-      return [...value]
-    })
-  }, [])
+  const assignFile = useCallback(
+    (id: KitAudioId | undefined, index: number) => {
+      setFileAssignment((value) => {
+        if (slots.length <= index) {
+          return value
+        }
+        value[index] = id
+        return [...value]
+      })
+    },
+    [slots.length],
+  )
 
   const meta = useMemo(() => {
     const waves = slots
@@ -301,6 +307,93 @@ const useHighlight = () => {
 
 export type DrumKitContext = ReturnType<typeof useDrumKit>
 
+export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
+  const [selectedFiles, setSelectedFiles] = useState<KitAudioId[]>([])
+
+  // for now I'm inclined to only do additive range selections and singular selections invert the selected element
+  // this keeps the selection range much easier to maintain
+  // important: keep the last selected / clicked file as last entry
+  // alt and ctrl are handled all the same right now - alt is more uncommon, but sometimes useful for macs
+  // windows considers shift-selection after a ctrl selection to just select the shift selection, but idc, fight me.
+  // windows considers ctrl + shift selection to keep the prior selection, and I still don't really care
+  // shift > ctrl > click
+  // - shift: select range from the last selection (additive only)
+  // - ctrl: (or alt) add individual selection of file
+  // - click: just selection, clears multi-selection out
+  const setSelection = useCallback(
+    (id: KitAudioId, modifiers: ('shift' | 'alt' | 'ctrl' | 'meta')[]) => {
+      // no modifiers is just additive
+      if (modifiers.length <= 0) {
+        // clicking the same file with _one_ selection unselects all
+        // if multiple files are clicked and a user clicks one file, then only one file is clicked
+        // clicking again clears the selection
+        if (selectedFiles.length === 1 && selectedFiles[0] === id) {
+          setSelectedFiles([])
+          return
+        }
+        // otherwise just that one file is selected
+        setSelectedFiles([id])
+        return
+      }
+
+      if (modifiers.includes('shift')) {
+        const lastSelectedFile = selectedFiles?.at(-1)
+        // no prior selection, only set that one that's been clicked
+        if (!lastSelectedFile || lastSelectedFile === id) {
+          setSelectedFiles([id])
+          return
+        }
+        const lastIndex = kitAudio.files.findIndex((x) => x.id === lastSelectedFile)
+        const currentIndex = kitAudio.files.findIndex((x) => x.id === id)
+        // one of them not found (unlikely) or clicked the same entry
+        if (lastIndex < 0 || currentIndex < 0) {
+          return
+        }
+        let elements: KitAudioId[]
+        if (currentIndex < lastIndex) {
+          // without the last element to avoid duplicates - it's in the selection already
+          elements = kitAudio.files
+            .slice(currentIndex, lastIndex)
+            .toReversed()
+            .map((x) => x.id)
+        } else {
+          // without the first element to avoid duplicates - it's in the selection already
+          elements = kitAudio.files.slice(lastIndex + 1, currentIndex + 1).map((x) => x.id)
+        }
+        setSelectedFiles((value) => [...value, ...elements])
+        return
+      }
+      // now only ctrl/alt clicking is left
+      // if the element is selected, unselect it
+      if (selectedFiles.includes(id)) {
+        setSelectedFiles(selectedFiles.filter((x) => x !== id))
+        return
+      }
+      // otherwise add it to the selection
+      setSelectedFiles([...selectedFiles, id])
+    },
+    [kitAudio.files, selectedFiles],
+  )
+
+  const clearSelection = useCallback(() => setSelectedFiles([]), [])
+
+  // ordering by their indices of the files
+  const files = useMemo(
+    () =>
+      selectedFiles
+        .map((x) => kitAudio.files.find((y) => y.id === x))
+        .filter((x) => !!x)
+        .sort((a, b) => a.index - b.index),
+    [kitAudio.files, selectedFiles],
+  )
+
+  return {
+    selectedFiles: files,
+    setSelection,
+    clearSelection,
+  }
+}
+
 export const useDrumKit = () => {
   const kits = useKit()
   const files = useKitAudio()
@@ -308,16 +401,14 @@ export const useDrumKit = () => {
   const highlight = useHighlight()
   const config = useUserConfig(slots, kits)
   useDragHandler(files.addFile)
-
-  const [selectedFile, setSelectedFile] = useState<KitAudioId>()
+  const selection = useSelection(files)
 
   return {
     kits,
     files,
     slots,
     highlight,
-    selectedFile,
-    setSelectedFile,
     config,
+    selection,
   }
 }

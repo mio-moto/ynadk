@@ -1,5 +1,5 @@
 import { css, cx } from '@linaria/core'
-import { type FC, type HTMLProps, useRef } from 'react'
+import { type FC, type HTMLProps, useRef, useState } from 'react'
 import { style } from '../../app/style/style'
 import { type DrumKitContext, notes, octaves } from './DrumkitContext'
 import { Slot } from './Slot'
@@ -24,14 +24,15 @@ const sampleTableClass = css`
 export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext }> = ({ context, className, ...props }) => {
   const {
     slots: { slots },
-    selectedFile,
+    selection: { selectedFiles },
   } = context
+
+  const [pointerLoc, setPointerLoc] = useState<number>()
 
   const audioRef = useRef<HTMLAudioElement>(null)
   return (
-    <div className={cx(sampleTableClass, selectedFile && 'selective', className)} {...props}>
+    <div className={cx(sampleTableClass, selectedFiles.length > 0 && 'selective', className)} {...props}>
       <audio className="audio-player" ref={audioRef} />
-
       <div className="row">
         <div />
         <div>C</div>
@@ -54,10 +55,21 @@ export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitConte
           {notes.map((_, x) => {
             const idx = y * notes.length + x
             const slot = slots[idx]
+            const preview = pointerLoc === undefined ? undefined : selectedFiles[idx - pointerLoc]
             if (idx >= 128) {
               return undefined
             }
-            return <Slot key={slot.name} index={idx} context={context} audio={audioRef} />
+            return (
+              <Slot
+                key={slot.name}
+                index={idx}
+                context={context}
+                audio={audioRef}
+                onPointerEnter={() => setPointerLoc(idx)}
+                onPointerLeave={() => setPointerLoc(undefined)}
+                preview={preview}
+              />
+            )
           })}
         </div>
       ))}

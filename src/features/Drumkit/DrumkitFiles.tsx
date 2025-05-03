@@ -1,5 +1,5 @@
 import { css, cx } from '@linaria/core'
-import { type FC, type HTMLProps, useMemo, useRef, useState } from 'react'
+import { type FC, type HTMLProps, useEffect, useMemo, useRef, useState } from 'react'
 import { fragments } from '../../app/style/fragments'
 import { style } from '../../app/style/style'
 import { Button } from '../../components/Button'
@@ -29,7 +29,7 @@ const drumKitFilesClass = css`
       transition: ${fragments.transition.fast('color')};
       align-items: center;
       &.selected {
-        color: ${style.colors.ochre[700]};
+        color: ${style.themeColors.text.important};
       }
       &.highlighted {
         color: ${style.colors.lime[500]};
@@ -116,19 +116,66 @@ const drumKitFilesClass = css`
       }
     }
   }
-       
 `
+
+interface KeyState {
+  shift: boolean
+  alt: boolean
+  ctrl: boolean
+  meta: boolean
+}
+
+const collectModifiers = (keys: KeyState) => {
+  const modifiers: ('meta' | 'alt' | 'shift' | 'ctrl')[] = []
+  if (keys.alt) {
+    modifiers.push('alt')
+  }
+  if (keys.ctrl) {
+    modifiers.push('ctrl')
+  }
+  if (keys.meta) {
+    modifiers.push('alt')
+  }
+  if (keys.shift) {
+    modifiers.push('shift')
+  }
+  return modifiers
+}
 
 export const DrumKitFiles: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext }> = ({ className, context, ...props }) => {
   const {
     files: { files, meta, removeFile },
     highlight,
-    selectedFile,
-    setSelectedFile,
+    selection: { setSelection, selectedFiles },
   } = context
   const audioRef = useRef<HTMLAudioElement>(null)
   const otherChannels = useMemo(() => Object.entries(meta.channel.other), [meta.channel.other])
   const [statsOpen, setStatsOpen] = useState(false)
+  const keyRef = useRef({
+    shift: false,
+    alt: false,
+    ctrl: false,
+    meta: false,
+  })
+
+  useEffect(() => {
+    const listener = (ev: KeyboardEvent | MouseEvent) => {
+      keyRef.current = {
+        shift: ev.shiftKey,
+        alt: ev.altKey,
+        ctrl: ev.ctrlKey,
+        meta: ev.metaKey,
+      }
+    }
+    document.addEventListener('keydown', listener)
+    document.addEventListener('keyup', listener)
+    document.addEventListener('mousemove', listener)
+    return () => {
+      document.removeEventListener('keydown', listener)
+      document.removeEventListener('keyup', listener)
+      document.removeEventListener('mousemove', listener)
+    }
+  }, [])
 
   return (
     <div className={cx(drumKitFilesClass, className)} {...props}>
@@ -139,9 +186,9 @@ export const DrumKitFiles: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
         {files.map((x) => (
           <div
             key={x.id}
-            className={cx('file', x.id === selectedFile && 'selected', highlight.highlight === x.id && 'highlighted', x.type)}
+            className={cx('file', selectedFiles.some((y) => y.id === x.id) && 'selected', highlight.highlight === x.id && 'highlighted', x.type)}
             onClick={() => {
-              setSelectedFile(x.id === selectedFile ? undefined : x.id)
+              setSelection(x.id, collectModifiers(keyRef.current))
             }}
             onPointerEnter={() => {
               highlight.setHighlight(x.id)

@@ -1,8 +1,8 @@
-import { type FC, type HTMLProps, type RefObject, useMemo } from 'react'
-import type { DrumKitContext } from './DrumkitContext'
 import { css, cx } from '@linaria/core'
+import { type FC, type HTMLProps, type RefObject, useMemo } from 'react'
 import { fragments } from '../../app/style/fragments'
 import { style } from '../../app/style/style'
+import type { DrumKitContext, KitAudio } from './DrumkitContext'
 
 const kitColors = [
   style.colors.aqua[200],
@@ -25,7 +25,11 @@ const slotClass = css`
   transition: ${fragments.transition.regular('--border-color')}, ${fragments.transition.fast('color')};
 
   &.highlighted {
-    color: ${style.themeColors.text.important};
+    color: ${style.colors.lime[400]};
+  }
+
+  &.preview {
+    color: color-mix(in srgb, ${style.themeColors.text.important}, 15% transparent);
   }
 
   > .kit-type {
@@ -85,13 +89,9 @@ const slotClass = css`
   }
 `
 
-export const Slot: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext; index: number; audio: RefObject<HTMLAudioElement | null> }> = ({
-  context,
-  index,
-  className,
-  audio,
-  ...props
-}) => {
+export const Slot: FC<
+  HTMLProps<HTMLDivElement> & { context: DrumKitContext; index: number; audio: RefObject<HTMLAudioElement | null>; preview: KitAudio | undefined }
+> = ({ context, index, audio, preview, className, onClick, onPointerEnter, onPointerLeave, ...props }) => {
   const {
     slots: { slots, assignFile },
     config: {
@@ -99,8 +99,7 @@ export const Slot: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext; ind
     },
     kits: { kit, count: kitCount },
     highlight: { highlight, setHighlight },
-    selectedFile,
-    setSelectedFile,
+    selection: { selectedFiles, clearSelection },
   } = context
   const { slot, hitsStride, kitIndex } = useMemo(
     () => ({
@@ -118,12 +117,18 @@ export const Slot: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext; ind
       kitPos -= element.count
       if (kitPos < 0) {
         // edge case: an empty kit name is replaced with filler, otherwise the span will not take space
-
         return element.name || filler
       }
     }
     return filler
   }, [index, stride, kit, kitCount])
+
+  const content = useMemo(() => {
+    if (preview) {
+      return preview.index.toString().padStart(3, '0')
+    }
+    return slot.file?.index.toString().padStart(3, '0') ?? '-  -  -'
+  }, [preview, slot.file])
 
   return (
     <div
@@ -132,33 +137,39 @@ export const Slot: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext; ind
         hitsStride && 'bl',
         kitIndex >= 0 && `kit-${kitIndex}`,
         slot.file && slot.file.id === highlight && 'highlighted',
-        selectedFile && 'selective',
+        selectedFiles.length > 0 && 'selective',
+        preview && 'preview',
         className,
       )}
       {...props}
-      onClick={() => {
-        if (selectedFile === undefined && slot.file && audio.current && slot.file.type === 'present') {
+      onClick={(ev) => {
+        if (selectedFiles.length <= 0 && slot.file && audio.current && slot.file.type === 'present') {
           const blob = new Blob([slot.file.bytes], { type: 'audio/wav' })
           audio.current.src = URL.createObjectURL(blob)
           audio.current.play()
           return
         }
-        assignFile(selectedFile, index)
-        setSelectedFile(undefined)
+        for (const [idx, selectedFile] of selectedFiles.entries()) {
+          assignFile(selectedFile.id, index + idx)
+        }
+        clearSelection()
+        onClick?.(ev)
       }}
-      onPointerEnter={() => {
+      onPointerEnter={(ev) => {
         if (slot.file) {
           setHighlight(slot.file?.id)
         }
+        onPointerEnter?.(ev)
       }}
-      onPointerLeave={() => {
+      onPointerLeave={(ev) => {
         if (slot.file?.id === highlight) {
           setHighlight(undefined)
         }
+        onPointerLeave?.(ev)
       }}
     >
       {kitName && <span className="kit-type">{kitName}</span>}
-      <span className="file-number">{slot.file?.index.toString().padStart(3, '0') ?? '-   -   -'}</span>
+      <span className="file-number">{content}</span>
     </div>
   )
 }
