@@ -27,6 +27,7 @@ const drumKitFilesClass = css`
       display: flex;
       gap: 8px;
       transition: ${fragments.transition.fast('color')};
+      align-items: center;
       &.selected {
         color: ${style.colors.ochre[700]};
       }
@@ -35,6 +36,15 @@ const drumKitFilesClass = css`
       }
       > .name {
         flex: 1;
+      }
+
+      &.removed {
+        pointer-events: none;
+        > .name {
+          color: ${style.themeColors.text.disabled};
+          ${fragments.textStyle.body.s.regular};
+          transform: skewX(-15deg);
+        }
       }
     }
 
@@ -126,10 +136,10 @@ export const DrumKitFiles: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
       <audio className="audio" aria-hidden ref={audioRef} />
 
       <div className="files">
-        {files.map((x, i) => (
+        {files.map((x) => (
           <div
             key={x.id}
-            className={cx('file', x.id === selectedFile && 'selected', highlight.highlight === x.id && 'highlighted')}
+            className={cx('file', x.id === selectedFile && 'selected', highlight.highlight === x.id && 'highlighted', x.type)}
             onClick={() => {
               setSelectedFile(x.id === selectedFile ? undefined : x.id)
             }}
@@ -142,31 +152,35 @@ export const DrumKitFiles: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
               }
             }}
           >
-            <span className="index">{i.toString().padStart(3, '0')}</span>
-            <span className="name">{x.name}</span>
-            <Button
-              onClick={(evt) => {
-                evt.stopPropagation()
-                if (!audioRef.current) {
-                  return
-                }
-                const blob = new Blob([x.bytes], { type: 'audio/wav' })
-                audioRef.current.src = URL.createObjectURL(blob)
-                audioRef.current.play()
-              }}
-            >
-              &gt;
-            </Button>
+            <span className="index">{x.index.toString().padStart(3, '0')}</span>
+            <span className="name">{x.type === 'present' ? x.name : 'removed'}</span>
+            {x.type === 'present' && (
+              <>
+                <Button
+                  onClick={(evt) => {
+                    evt.stopPropagation()
+                    if (!audioRef.current || x.type !== 'present') {
+                      return
+                    }
+                    const blob = new Blob([x.bytes], { type: 'audio/wav' })
+                    audioRef.current.src = URL.createObjectURL(blob)
+                    audioRef.current.play()
+                  }}
+                >
+                  &gt;
+                </Button>
 
-            <Button
-              className="close"
-              onClick={(evt) => {
-                evt.stopPropagation()
-                removeFile(x.id)
-              }}
-            >
-              x
-            </Button>
+                <Button
+                  className="close"
+                  onClick={(evt) => {
+                    evt.stopPropagation()
+                    removeFile(x.id)
+                  }}
+                >
+                  x
+                </Button>
+              </>
+            )}
           </div>
         ))}
       </div>

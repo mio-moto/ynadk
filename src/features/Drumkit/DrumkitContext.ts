@@ -58,22 +58,30 @@ const useKit = () => {
 
 export type KitAudioId = UUID & { __kitAudioIdBrand: never }
 const makeKitAudioId = () => window.crypto.randomUUID() as KitAudioId
-export interface KitAudio {
+export type KitAudio = PresentKitAudio | RemovedKitAudio
+export interface PresentKitAudio {
+  type: 'present'
   id: KitAudioId
+  index: number
   name: string
   bytes: Uint8Array
   wav: WaveFile
 }
+export interface RemovedKitAudio {
+  type: 'removed'
+  id: KitAudioId
+  index: number
+}
 const useKitAudio = () => {
   const [files, setAudioFiles] = useState<KitAudio[]>([])
-  const addFile = useCallback((kitAudio: Omit<KitAudio, 'id'>) => {
-    setAudioFiles((value) => [...value, { ...kitAudio, id: makeKitAudioId() }])
+  const addFile = useCallback((kitAudio: Omit<PresentKitAudio, 'id' | 'type'>) => {
+    setAudioFiles((value) => [...value, { ...kitAudio, id: makeKitAudioId(), type: 'present' }])
   }, [])
   const removeFile = useCallback((id: KitAudioId) => {
-    setAudioFiles((value) => value.filter((x) => x.id !== id))
+    setAudioFiles((value) => value.map((x) => (x?.id === id ? { type: 'removed', id: x.id, index: x.index } : x)))
   }, [])
 
-  const meta = useMemo(() => makeAudioMetaData(files.map((x) => x.wav).filter((x) => !!x)), [files])
+  const meta = useMemo(() => makeAudioMetaData(files.filter((x) => x.type === 'present').map((x) => x.wav)), [files])
 
   return {
     meta,
@@ -119,7 +127,7 @@ const useSlots = (kit: ReturnType<typeof useKit>['kit'], kitAudio: ReturnType<ty
     return slots
   }, [])
 
-  const [fileAssignment, setFileAssigment] = useState<(KitAudioId | undefined)[]>(internalSlots.map(() => undefined))
+  const [fileAssignment, setFileAssignment] = useState<(KitAudioId | undefined)[]>(internalSlots.map(() => undefined))
 
   const slots = useMemo(
     () =>
@@ -135,7 +143,7 @@ const useSlots = (kit: ReturnType<typeof useKit>['kit'], kitAudio: ReturnType<ty
 
         return {
           ...x,
-          file: { ...kitAudio[index], index },
+          file: { ...kitAudio[index] },
           hint: { ...kit[i % kit.length] },
         }
       }),
@@ -143,13 +151,19 @@ const useSlots = (kit: ReturnType<typeof useKit>['kit'], kitAudio: ReturnType<ty
   )
 
   const assignFile = useCallback((id: KitAudioId | undefined, index: number) => {
-    setFileAssigment((value) => {
+    setFileAssignment((value) => {
       value[index] = id
       return [...value]
     })
   }, [])
 
-  const meta = useMemo(() => makeAudioMetaData(slots.map((x) => x.file?.wav).filter((x) => !!x)), [slots])
+  const meta = useMemo(() => {
+    const waves = slots
+      .map((x) => x.file)
+      .filter((x) => x?.type === 'present')
+      .map((x) => x.wav)
+    return makeAudioMetaData(waves)
+  }, [slots])
 
   return {
     meta,
@@ -166,6 +180,7 @@ const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile']) => {
     const dropHandler = async (evt: DragEvent) => {
       evt.preventDefault()
       const files: Parameters<typeof addFile>[0][] = []
+      let lastIndex = files.at(-1)?.index ?? 1
       for (const file of evt.dataTransfer?.files ?? []) {
         if (!file.name.toLowerCase().endsWith('.wav')) {
           continue
@@ -175,10 +190,11 @@ const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile']) => {
           const wav = new WaveFile(bytes)
           files.push({
             name: file.name,
+            index: lastIndex,
             bytes,
             wav,
           })
-          console.log(wav.listCuePoints())
+          lastIndex += 1
         } catch (e) {
           console.error(e)
         }

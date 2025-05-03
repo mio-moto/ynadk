@@ -29,7 +29,7 @@ const slotClass = css`
   }
 
   > .kit-type {
-    white-space: pre-wrap;
+    white-space: pre;
     font-size: 12px;
     line-height: 90%;
   }
@@ -137,7 +137,7 @@ export const Slot: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext; ind
       )}
       {...props}
       onClick={() => {
-        if (selectedFile === undefined && slot.file && audio.current) {
+        if (selectedFile === undefined && slot.file && audio.current && slot.file.type === 'present') {
           const blob = new Blob([slot.file.bytes], { type: 'audio/wav' })
           audio.current.src = URL.createObjectURL(blob)
           audio.current.play()

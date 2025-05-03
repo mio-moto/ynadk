@@ -1,5 +1,5 @@
 import { WaveFile } from 'wavefile'
-import type { BitDepth, DrumKitContext } from './DrumkitContext'
+import type { BitDepth, DrumKitContext, KitAudio } from './DrumkitContext'
 import type { WaveFormat } from './utils'
 
 const invSqrt2 = 1 / Math.sqrt(2)
@@ -154,6 +154,16 @@ const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [
     .keys()
     .map((_) => (bitDepth === 8 ? 64 : 0)),
 ]
+
+const collectFile = (file: KitAudio | undefined, index: number, lastIndex: number, emptyFile: WaveFile) => {
+  if (index < lastIndex) {
+    return undefined
+  }
+  if (!file || file.type === 'removed') {
+    return emptyFile
+  }
+  return file.wav
+}
 export const renderAudioKit = (currentContext: DrumKitContext) => {
   const {
     slots: { slots },
@@ -165,7 +175,7 @@ export const renderAudioKit = (currentContext: DrumKitContext) => {
   emptyFile.fromScratch(channels, sampleRate, bitDepth.toString(), createEmptyFrame(bitDepth, channels))
 
   const lastIndex = slots.length - slots.toReversed().findIndex((x) => !!x.file)
-  const collectedFiles = slots.map((x, i) => (i < lastIndex ? (x.file?.wav ?? emptyFile) : undefined)).filter((x) => !!x)
+  const collectedFiles = slots.map((x, i) => collectFile(x.file, i, lastIndex, emptyFile)).filter((x) => !!x)
 
   const targetSamples = collectedFiles.map((x) => cookSample(x, channels, bitDepth, sampleRate))
   const sampleLength = targetSamples.reduce((a, b) => a + (b?.length ?? 0), 0)
