@@ -209,55 +209,53 @@ const useUserConfig = (slots: ReturnType<typeof useSlots>, kit: ReturnType<typeo
   const [stride, setStride] = useState<number | 'auto'>('auto')
   const [normalize, setNormalize] = useState(true)
 
+  const current = useMemo(() => {
+    const usedChannels: 1 | 2 = channels === 'auto' ? (slots.meta.channel.stereo > 0 ? 2 : 1) : channels === 'stereo' ? 2 : 1
+    // @TODO: poor fortifications against odd wav formats, can be certainly improved
+    const usedBitDepth = bitDepth === 'auto' ? (slots.meta.bitDepth.max as BitDepth) : bitDepth
+    const usedSampleRate = sampleRate === 'auto' ? (slots.meta.sampleRate.max as SampleRate) : sampleRate
+    return {
+      channels: usedChannels,
+      bitDepth: usedBitDepth,
+      sampleRate: usedSampleRate,
+      stride: stride === 'auto' ? kit.count : stride,
+      normalize,
+      kitName,
+    }
+  }, [slots.meta, bitDepth, sampleRate, channels, normalize, kitName, stride, kit.count])
+
   const changeSampleRate = useCallback(
     (direction: 'increment' | 'decrement') => {
       const change = direction === 'increment' ? +1 : -1
-      setSampleRate((value) => {
-        if (value === 'auto' && !sampleRates.some((x) => x === slots.meta.sampleRate.max)) {
-          return 'auto'
-        }
-        const usedSampleRate = value === 'auto' ? slots.meta.sampleRate.max : value
-        const index = sampleRates.findIndex((x) => x === usedSampleRate)
-        if (index < 0) {
-          return value
-        }
-        return sampleRates[Math.min(sampleRates.length, Math.max(0, index + change))]
-      })
+      const index = sampleRates.findIndex((x) => x <= current.sampleRate)
+      if (index < 0) {
+        return
+      }
+      setSampleRate(sampleRates[Math.min(sampleRates.length, Math.max(0, index + change))])
     },
-    [slots],
+    [current],
   )
-
   const changeBitDepth = useCallback(
     (direction: 'increment' | 'decrement') => {
       const change = direction === 'increment' ? +1 : -1
-
-      setBitDepth((value) => {
-        if (value === 'auto' && !bitDepths.some((x) => x === slots.meta.bitDepth.max)) {
-          return 'auto'
-        }
-        const usedBitDepth = value === 'auto' ? slots.meta.bitDepth.max : value
-        const index = bitDepths.findIndex((x) => x === usedBitDepth)
-        if (index < 0) {
-          return value
-        }
-        return bitDepths[Math.min(bitDepths.length, Math.max(0, index + change))]
-      })
+      const index = bitDepths.findIndex((x) => x <= current.bitDepth)
+      if (index < 0) {
+        return
+      }
+      setBitDepth(bitDepths[Math.min(bitDepths.length, Math.max(0, index + change))])
     },
-    [slots],
+    [current],
   )
-
   const changeStride = useCallback(
     (direction: 'increment' | 'decrement') => {
       const change = direction === 'increment' ? +1 : -1
-      setStride((value) => {
-        const currentStride = value === 'auto' ? kit.count : (value ?? 0)
-        return currentStride + change
-      })
+      setStride(current.stride + change)
     },
-    [kit],
+    [current],
   )
 
   return {
+    current,
     bitDepth,
     setBitDepth,
     changeBitDepth,

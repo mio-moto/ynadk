@@ -1,5 +1,5 @@
 import { css, cx } from '@linaria/core'
-import { type FC, type HTMLProps, useMemo } from 'react'
+import type { FC, HTMLProps } from 'react'
 import { fragments } from '../../app/style/fragments'
 import { style } from '../../app/style/style'
 import { Button } from '../../components/Button'
@@ -69,23 +69,10 @@ export const UserSettings: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
       changeStride,
       normalize,
       setNormalize,
+      current: { bitDepth: fileBitDepth, channels: fileChannels, sampleRate: fileSampleRate, stride: kitStride },
     },
-    slots: { meta },
-    kits: { count: kitCount },
   } = context
 
-  const { fileBitDepth, fileChannels, fileSampleRate, kitStride } = useMemo(() => {
-    const usedStride = stride === 0 ? kitCount : stride
-    const usedBitDepth = bitDepth === 'auto' ? meta.bitDepth.max : bitDepth
-    const usedChannels = channels === 'auto' ? (meta.channel.stereo > 0 ? 'stereo' : 'mono') : channels
-    const usedSampleRate = sampleRate === 'auto' ? meta.sampleRate.max : sampleRate
-    return {
-      kitStride: usedStride,
-      fileBitDepth: usedBitDepth,
-      fileChannels: usedChannels,
-      fileSampleRate: usedSampleRate,
-    }
-  }, [meta, bitDepth, channels, sampleRate, kitCount, stride])
   return (
     <div className={cx(userSettingsClass, className)} {...props}>
       <Input placeholder="kit name" value={kitName} onChange={(evt) => setKitName(evt.currentTarget.value)} className="name" />

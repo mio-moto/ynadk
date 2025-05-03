@@ -149,23 +149,25 @@ const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDep
   return cookedAudio
 }
 
-
-const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [...Array(channels).keys().map(_ => bitDepth === 8 ? 64 : 0)]
+const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [
+  ...Array(channels)
+    .keys()
+    .map((_) => (bitDepth === 8 ? 64 : 0)),
+]
 export const renderAudioKit = (currentContext: DrumKitContext) => {
   const {
-    slots: { slots, meta },
-    config: { sampleRate, channels, bitDepth },
+    slots: { slots },
+    config: {
+      current: { channels, bitDepth, sampleRate },
+    },
   } = currentContext
-  const usedChannels = channels === 'auto' ? (meta.channel.stereo > 0 ? 2 : 1) : channels === 'mono' ? 1 : 2
-  const usedSampleRate = sampleRate === 'auto' ? meta.sampleRate.max : sampleRate
-  const usedBitDepth = bitDepth === 'auto' ? (meta.bitDepth.max as BitDepth) : bitDepth
   const emptyFile = new WaveFile()
-  emptyFile.fromScratch(usedChannels, usedSampleRate, usedBitDepth.toString(), createEmptyFrame(usedBitDepth, usedChannels))
+  emptyFile.fromScratch(channels, sampleRate, bitDepth.toString(), createEmptyFrame(bitDepth, channels))
 
   const lastIndex = slots.length - slots.toReversed().findIndex((x) => !!x.file)
   const collectedFiles = slots.map((x, i) => (i < lastIndex ? (x.file?.wav ?? emptyFile) : undefined)).filter((x) => !!x)
 
-  const targetSamples = collectedFiles.map((x) => (cookSample(x, usedChannels, usedBitDepth, usedSampleRate)))
+  const targetSamples = collectedFiles.map((x) => cookSample(x, channels, bitDepth, sampleRate))
   const sampleLength = targetSamples.reduce((a, b) => a + (b?.length ?? 0), 0)
   const audioSamples = new Float64Array(sampleLength)
   let writtenLength = 0
@@ -178,10 +180,10 @@ export const renderAudioKit = (currentContext: DrumKitContext) => {
   }
 
   const result = new WaveFile()
-  result.fromScratch(usedChannels, usedSampleRate, usedBitDepth.toString(), audioSamples)
+  result.fromScratch(channels, sampleRate, bitDepth.toString(), audioSamples)
   let lastCuePoint = 0
   for (const file of targetSamples) {
-    const time = (file.length / usedSampleRate / usedChannels) * 1000
+    const time = (file.length / sampleRate / channels) * 1000
     result.setCuePoint({ position: lastCuePoint, end: null, label: 'atad' })
     lastCuePoint += time
   }
