@@ -3,6 +3,7 @@ import { type FC, useRef, useState } from 'react'
 import { fragments } from './app/style/fragments'
 import { style } from './app/style/style'
 import { Button } from './components/Button'
+import { DroppingOverlay } from './features/Drumkit/DropOverlay'
 import { useDrumKit } from './features/Drumkit/DrumkitContext'
 import { DrumKitFiles } from './features/Drumkit/DrumkitFiles'
 import { KitOrder } from './features/Drumkit/KitOrder'
@@ -96,6 +97,7 @@ export const App: FC = () => {
   const {
     config: { kitName },
     slots: { slots },
+    fileDropping: { isDropping },
   } = context
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -142,6 +144,7 @@ export const App: FC = () => {
           <DrumKitFiles context={context} />
         </div>
       </main>
+      <DroppingOverlay isDropping={isDropping} />
     </div>
   )
 }

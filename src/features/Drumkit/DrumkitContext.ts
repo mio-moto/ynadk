@@ -179,15 +179,26 @@ const useSlots = (kit: ReturnType<typeof useKit>['kit'], kitAudio: ReturnType<ty
 }
 
 const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile']) => {
+  const [isDropping, setIsDropping] = useState(false)
   useEffect(() => {
     const dragHandler = (evt: DragEvent) => {
       evt.preventDefault()
+      setIsDropping((value) => {
+        if (!value) {
+          return true
+        }
+        return value
+      })
     }
     const dropHandler = async (evt: DragEvent) => {
       evt.preventDefault()
+      setIsDropping(false)
       const files: Parameters<typeof addFile>[0][] = []
       let lastIndex = files.at(-1)?.index ?? 1
-      for (const file of evt.dataTransfer?.files ?? []) {
+      const droppedFiles = [...(evt.dataTransfer?.files ?? [])]
+        .filter((x) => x.name.toLowerCase().endsWith('wav'))
+        .toSorted((a, b) => (a.name > b.name ? 1 : -1))
+      for (const file of droppedFiles) {
         if (!file.name.toLowerCase().endsWith('.wav')) {
           continue
         }
@@ -209,13 +220,24 @@ const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile']) => {
         addFile(file)
       }
     }
+    const dragEndHandler = () => {
+      setIsDropping(false)
+    }
     document?.addEventListener('drop', dropHandler)
     document?.addEventListener('dragover', dragHandler)
+    document?.addEventListener('dragend', dragEndHandler)
+    document?.addEventListener('dragleave', dragEndHandler)
     return () => {
       document?.removeEventListener('drop', dropHandler)
       document?.removeEventListener('dragover', dragHandler)
+      document?.removeEventListener('dragend', dragEndHandler)
+      document?.removeEventListener('dragleave', dragEndHandler)
     }
   }, [addFile])
+
+  return {
+    isDropping,
+  }
 }
 
 const sampleRates = [8000, 44100, 48000, 96000, 192000] as const
@@ -427,7 +449,7 @@ export const useDrumKit = () => {
   const slots = useSlots(kits.kit, files.files)
   const highlight = useHighlight()
   const config = useUserConfig(slots, kits)
-  useDragHandler(files.addFile)
+  const fileDropping = useDragHandler(files.addFile)
   const selection = useSelection(files)
 
   return {
@@ -437,5 +459,6 @@ export const useDrumKit = () => {
     highlight,
     config,
     selection,
+    fileDropping,
   }
 }

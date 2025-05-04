@@ -40,6 +40,7 @@ export const globalStyle = css`
     }
 
     * {
+      font-synthesis: style small-caps weight;
       font-family: "${fontName}";
       ${fragments.textStyle.body.m.regular};
       line-height: normal;
