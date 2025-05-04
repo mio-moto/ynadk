@@ -84,6 +84,7 @@ export const KitOrder: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext 
               </Button>
               <Button
                 onClick={() => {
+                  kits.setKitCount(x.id, Math.max(0, x.count - 1))
                   kits.setKitCount(x.id, 0)
                 }}
               >
