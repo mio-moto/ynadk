@@ -24,10 +24,11 @@ export const buttonClass = css`
     --border-color: ${style.colors.ochre[200]};
   }
   &:disabled {
+    color: ${style.themeColors.text.disabled};
     cursor: unset;
     --border-color: ${style.themeColors.text.disabled};
     &:hover {
-      --border-color: ${style.themeColors.background.default};
+      --border-color: ${style.themeColors.text.disabled};
     }
   }
 

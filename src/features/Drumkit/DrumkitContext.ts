@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { WaveFile } from 'wavefile'
 import { makeAudioMetaData } from './utils'
 
@@ -310,6 +310,32 @@ export type DrumKitContext = ReturnType<typeof useDrumKit>
 export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
   const [selectedFiles, setSelectedFiles] = useState<KitAudioId[]>([])
 
+  const modifiers = useRef({
+    shift: false,
+    alt: false,
+    ctrl: false,
+    meta: false,
+  })
+  // tracks changes in modifiers
+  useEffect(() => {
+    const listener = (ev: KeyboardEvent | MouseEvent) => {
+      modifiers.current = {
+        shift: ev.shiftKey,
+        alt: ev.altKey,
+        ctrl: ev.ctrlKey,
+        meta: ev.metaKey,
+      }
+    }
+    document.addEventListener('keydown', listener)
+    document.addEventListener('keyup', listener)
+    document.addEventListener('mousemove', listener)
+    return () => {
+      document.removeEventListener('keydown', listener)
+      document.removeEventListener('keyup', listener)
+      document.removeEventListener('mousemove', listener)
+    }
+  }, [])
+
   // for now I'm inclined to only do additive range selections and singular selections invert the selected element
   // this keeps the selection range much easier to maintain
   // important: keep the last selected / clicked file as last entry
@@ -321,9 +347,9 @@ export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
   // - ctrl: (or alt) add individual selection of file
   // - click: just selection, clears multi-selection out
   const setSelection = useCallback(
-    (id: KitAudioId, modifiers: ('shift' | 'alt' | 'ctrl' | 'meta')[]) => {
+    (id: KitAudioId) => {
       // no modifiers is just additive
-      if (modifiers.length <= 0) {
+      if (!Object.values(modifiers.current).some((x) => x)) {
         // clicking the same file with _one_ selection unselects all
         // if multiple files are clicked and a user clicks one file, then only one file is clicked
         // clicking again clears the selection
@@ -336,7 +362,7 @@ export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
         return
       }
 
-      if (modifiers.includes('shift')) {
+      if (modifiers.current.shift) {
         const lastSelectedFile = selectedFiles?.at(-1)
         // no prior selection, only set that one that's been clicked
         if (!lastSelectedFile || lastSelectedFile === id) {
@@ -391,6 +417,7 @@ export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
     selectedFiles: files,
     setSelection,
     clearSelection,
+    modifiers,
   }
 }
 

@@ -65,8 +65,8 @@ export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitConte
                 index={idx}
                 context={context}
                 audio={audioRef}
-                onPointerEnter={() => setPointerLoc(idx)}
-                onPointerLeave={() => setPointerLoc(undefined)}
+                onPointerEnter={() => pointerLoc !== idx && selectedFiles.length > 0 && setPointerLoc(idx)}
+                onPointerLeave={() => pointerLoc !== undefined && selectedFiles.length > 0 && setPointerLoc(undefined)}
                 preview={preview}
               />
             )

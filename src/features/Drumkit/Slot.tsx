@@ -1,5 +1,5 @@
 import { css, cx } from '@linaria/core'
-import { type FC, type HTMLProps, type RefObject, useMemo } from 'react'
+import { type FC, type HTMLProps, type RefObject, memo, useMemo } from 'react'
 import { fragments } from '../../app/style/fragments'
 import { style } from '../../app/style/style'
 import type { DrumKitContext, KitAudio } from './DrumkitContext'
@@ -23,6 +23,8 @@ const slotClass = css`
   border-image-slice: 1;
   background-color: transparent;
   transition: ${fragments.transition.regular('--border-color')}, ${fragments.transition.fast('color')};
+  min-width: 30px;
+  min-height: 21px;
 
   &.highlighted {
     color: ${style.colors.lime[400]};
@@ -56,6 +58,51 @@ const slotClass = css`
     border-left: 1.5px solid transparent;
     border-bottom: 1.5px solid transparent;
   }
+
+
+  > .remover {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 100px;
+    color: ${style.themeColors.text.secondary};
+    background: ${style.themeColors.background.default};
+    border: 1px solid ${style.themeColors.line.default};
+    top: 0;
+    right: 0;
+    transform: translate(50%, -65%);
+    opacity: 0;
+    aspect-ratio: 1 / 1;
+    font-size: 16px;
+    line-height: 0%;
+    width: 12px;
+    height: 12px;
+    vertical-align: baseline;
+    transition: ${fragments.transition.regular('background-color')};
+    &:hover {
+      background: ${style.themeColors.background.defaultHover};
+    }
+
+    &:after {
+      display: inline;
+      content: 'x';
+      font-size: 16px;
+      height: 10%;
+      transform: translate(0%, -0%);
+    }
+    
+    @keyframes show {
+      from { opacity: 0; cursor: unset; pointer-events: none; }
+      50% { cursor: pointer; pointer-events: all; }
+      to { opacity: 1; cursor: pointer; pointer-events: all; }
+    }
+  }
+
+  &:hover > .remover {
+    animation: 0.25s ease-in 1s forwards show;
+  }
+
 
   &.bl:before {
     border-left-color: ${style.colors.ochre[700]};
@@ -91,7 +138,7 @@ const slotClass = css`
 
 export const Slot: FC<
   HTMLProps<HTMLDivElement> & { context: DrumKitContext; index: number; audio: RefObject<HTMLAudioElement | null>; preview: KitAudio | undefined }
-> = ({ context, index, audio, preview, className, onClick, onPointerEnter, onPointerLeave, ...props }) => {
+> = memo(({ context, index, audio, preview, className, onClick, onPointerEnter, onPointerLeave, ...props }) => {
   const {
     slots: { slots, assignFile },
     config: {
@@ -170,6 +217,15 @@ export const Slot: FC<
     >
       {kitName && <span className="kit-type">{kitName}</span>}
       <span className="file-number">{content}</span>
+      {slot.file?.type === 'present' && (
+        <div
+          className="remover"
+          onClick={(evt) => {
+            evt.stopPropagation()
+            assignFile(undefined, slot.index)
+          }}
+        />
+      )}
     </div>
   )
-}
+})

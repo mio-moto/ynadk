@@ -16,44 +16,54 @@ const appClass = css`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
 
   > .main {
+    flex: 1;
     display: flex;
     flex-direction: column;
     justify-content:  center;
-    align-items: center;
+    align-items: stretch;
     gap: 24px;
 
-    > .title {
-      position: relative;
-      margin: 0;
-      > .user-guide {
-        cursor: pointer;
-        position: absolute;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        top: 0;
-        right: -30px;
-        height: 30px;
-        width: 30px;
-        transform: translate(50%, 50%);
-        border: 2px solid ${style.themeColors.line.default};
-        transition: ${fragments.transition.regular('background-color')};
+    > .heading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      > .title {
+        position: relative;
+        margin: 0;
 
-        &:hover {
-          background-color: ${style.themeColors.background.defaultHover};
+        > .user-guide {
+          cursor: pointer;
+          position: absolute;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          top: 0;
+          right: -30px;
+          height: 30px;
+          width: 30px;
+          transform: translate(50%, 50%);
+          border: 2px solid ${style.themeColors.line.default};
+          transition: ${fragments.transition.regular('background-color')};
+
+          &:hover {
+            background-color: ${style.themeColors.background.defaultHover};
+          }
         }
       }
     }
 
     > .panels {
+      flex: 1;
       display: flex;
       gap: 48px;
 
 
-
+      > * {
+        flex: 1;
+      }
       > .center {
         flex: 1;
         display: flex;
@@ -85,6 +95,7 @@ export const App: FC = () => {
   const context = useDrumKit()
   const {
     config: { kitName },
+    slots: { slots },
   } = context
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -95,12 +106,14 @@ export const App: FC = () => {
       <UserGuide forceOpen={forceUserGuide} onClose={() => setForceUserGuide(false)} />
       <audio style={{ display: 'none' }} ref={audioRef} />
       <main className="main">
-        <h1 className="title">
-          YNADK{' '}
-          <div className="user-guide" onClick={() => setForceUserGuide(true)}>
-            ?
-          </div>
-        </h1>
+        <div className="heading">
+          <h1 className="title">
+            YNADK
+            <div className="user-guide" onClick={() => setForceUserGuide(true)}>
+              ?
+            </div>
+          </h1>
+        </div>
         <div className="panels">
           <KitOrder context={context} />
           <div className="center">
@@ -109,6 +122,7 @@ export const App: FC = () => {
 
             <Button
               className="render"
+              disabled={!slots.some((x) => x.file?.type === 'present')}
               onClick={() => {
                 const result = renderAudioKit(context)
                 const buffer = result.toBuffer()
