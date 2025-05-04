@@ -156,7 +156,7 @@ const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [
 ]
 
 const collectFile = (file: KitAudio | undefined, index: number, lastIndex: number, emptyFile: WaveFile) => {
-  if (index < lastIndex) {
+  if (index > lastIndex) {
     return undefined
   }
   if (!file || file.type === 'removed') {
@@ -174,7 +174,7 @@ export const renderAudioKit = (currentContext: DrumKitContext) => {
   const emptyFile = new WaveFile()
   emptyFile.fromScratch(channels, sampleRate, bitDepth.toString(), createEmptyFrame(bitDepth, channels))
 
-  const lastIndex = slots.length - slots.toReversed().findIndex((x) => !!x.file)
+  const lastIndex = slots.length - slots.toReversed().findIndex((x) => !!x.file && x.file.type === 'present')
   const collectedFiles = slots.map((x, i) => collectFile(x.file, i, lastIndex, emptyFile)).filter((x) => !!x)
 
   const targetSamples = collectedFiles.map((x) => cookSample(x, channels, bitDepth, sampleRate))
