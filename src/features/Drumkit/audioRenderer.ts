@@ -115,28 +115,30 @@ const maxValueByBitDepth: Record<BitDepth, number> = {
 }
 
 const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDepth, targetSampleRate: number) => {
-  const format = wav.fmt as WaveFormat
-  if (format.bitsPerSample !== targetBitDepth) {
+  if ((wav.fmt as WaveFormat).bitsPerSample !== targetBitDepth) {
     wav.toBitDepth(targetBitDepth.toString())
   }
-  if (format.sampleRate !== targetSampleRate) {
+  if ((wav.fmt as WaveFormat).sampleRate !== targetSampleRate) {
     wav.toSampleRate(targetSampleRate, { method: 'sinc' })
   }
 
+  // the library mutates the fmt object
+  const { numChannels } = wav.fmt as WaveFormat
+
   // interleaved audio files
   const samples = wav.getSamples(true, Float64Array)
-  const audioFrames = samples.length / format.numChannels
+  const audioFrames = samples.length / numChannels
   const cookedAudio = new Float64Array(audioFrames * targetChannels)
   const maxValue = samples.reduce((prev, curr) => Math.max(prev, Math.abs(curr)), 0)
   const factor = maxValueByBitDepth[targetBitDepth] / maxValue
 
   // go through all audio frames with each channel
-  for (let i = 0; i < samples.length; i += format.numChannels) {
+  for (let i = 0; i < samples.length; i += numChannels) {
     const frame: number[] = []
-    for (let ch = 0; ch < format.numChannels; ch += 1) {
+    for (let ch = 0; ch < numChannels; ch += 1) {
       frame[ch] = samples[ch + i]
     }
-    const idx = (i / format.numChannels) * targetChannels
+    const idx = (i / numChannels) * targetChannels
     if (targetChannels === 1) {
       const value = mixStrategies.toMono(...frame)
       cookedAudio[idx] = value * factor
