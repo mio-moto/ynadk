@@ -1,6 +1,7 @@
 import { WaveFile } from 'wavefile'
-import type { BitDepth, DrumKitContext, KitAudio } from './DrumkitContext'
+import type { BitDepth, DrumKitContext } from './DrumkitContext'
 import type { WaveFormat } from './utils'
+import type { RendererMessage } from './webworker'
 
 const invSqrt2 = 1 / Math.sqrt(2)
 const inv2Sqrt2 = 1 / (2 * Math.sqrt(2))
@@ -157,40 +158,47 @@ const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [
     .map((_) => (bitDepth === 8 ? 64 : 0)),
 ]
 
-const collectFile = (file: KitAudio | undefined, index: number, lastIndex: number, emptyFile: WaveFile) => {
+const collectFile = (file: WaveFile | undefined, index: number, lastIndex: number, emptyFile: WaveFile) => {
   if (index > lastIndex) {
     return undefined
   }
-  if (!file || file.type === 'removed') {
+  if (!file) {
     return emptyFile
   }
-  return file.wav
+  return file
 }
-export const renderAudioKit = (currentContext: DrumKitContext) => {
-  const {
-    slots: { slots },
-    config: {
-      current: { channels, bitDepth, sampleRate },
-    },
-  } = currentContext
+export const renderAudioKit = (
+  slots: (WaveFile | undefined)[],
+  currentConfig: DrumKitContext['config']['current'],
+  onUpdate: (message: RendererMessage) => void,
+) => {
+  onUpdate({ type: 'update', progress: 0 })
+  const { channels, bitDepth, sampleRate } = currentConfig
   const emptyFile = new WaveFile()
   emptyFile.fromScratch(channels, sampleRate, bitDepth.toString(), createEmptyFrame(bitDepth, channels))
 
-  const lastIndex = slots.length - slots.toReversed().findIndex((x) => !!x.file && x.file.type === 'present')
-  const collectedFiles = slots.map((x, i) => collectFile(x.file, i, lastIndex, emptyFile)).filter((x) => !!x)
+  const lastIndex = slots.length - slots.toReversed().findIndex((x) => !!x)
+  const collectedFiles = slots.map((x, i) => collectFile(x, i, lastIndex, emptyFile)).filter((x) => !!x)
 
-  const targetSamples = collectedFiles.map((x) => cookSample(x, channels, bitDepth, sampleRate))
+  onUpdate({ type: 'update', progress: 1 })
+  const targetSamples: Float64Array<ArrayBuffer>[] = []
+  for (const [index, sample] of collectedFiles.entries()) {
+    targetSamples.push(cookSample(sample, channels, bitDepth, sampleRate))
+    // goes till 97%
+    onUpdate({ type: 'update', progress: 1 + 89 * (index / (collectedFiles.length - 1)) })
+  }
   const sampleLength = targetSamples.reduce((a, b) => a + (b?.length ?? 0), 0)
   const audioSamples = new Float64Array(sampleLength)
   let writtenLength = 0
-  for (const sample of targetSamples) {
+  for (const [index, sample] of targetSamples.entries()) {
     if (sample === undefined) {
       continue
     }
     audioSamples.set(sample, writtenLength)
     writtenLength += sample.length
+    // goes till 99%
+    onUpdate({ type: 'update', progress: 97 + 2 * (index / (targetSamples.length - 1)) })
   }
-
   const result = new WaveFile()
   result.fromScratch(channels, sampleRate, bitDepth.toString(), audioSamples)
   let lastCuePoint = 0

@@ -36,10 +36,6 @@ const userGuideClass = css`
     cursor: pointer;
   }
 
-  & code {
-
-  }
-
   .content {
     margin: 30px 0 0 8px;
     padding: 24px 24px;
@@ -49,11 +45,6 @@ const userGuideClass = css`
     gap: 16px;
 
     > p, > div {
-      code {
-        border: 1px solid ${style.themeColors.line.default};
-        padding: 0 4px;
-        color: ${themeColors.text.important};
-      }
 
       > * {
         padding-top: 4px;

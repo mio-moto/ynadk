@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { WaveFile } from 'wavefile'
+import { createEventBus } from '../../utils/events'
 import { makeAudioMetaData } from './utils'
 
 export type UUID = ReturnType<typeof window.crypto.randomUUID>
@@ -244,6 +245,7 @@ const sampleRates = [8000, 44100, 48000, 96000, 192000] as const
 export type SampleRate = (typeof sampleRates)[number]
 const bitDepths = [8, 16, 24, 32] as const
 export type BitDepth = (typeof bitDepths)[number]
+export type UserConfig = ReturnType<typeof useUserConfig>['current']
 
 const useUserConfig = (slots: ReturnType<typeof useSlots>, kit: ReturnType<typeof useKit>) => {
   const [bitDepth, setBitDepth] = useState<BitDepth | 'auto'>('auto')
@@ -264,7 +266,7 @@ const useUserConfig = (slots: ReturnType<typeof useSlots>, kit: ReturnType<typeo
       sampleRate: usedSampleRate,
       stride: stride === 'auto' ? kit.count : stride,
       normalize,
-      kitName,
+      kitName: kitName.length <= 0 ? 'kit' : kitName,
     }
   }, [slots.meta, bitDepth, sampleRate, channels, normalize, kitName, stride, kit.count])
 
@@ -443,6 +445,30 @@ export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
   }
 }
 
+export type RenderTaskId = UUID & { __renderTaskUuid: never }
+export interface RenderTask {
+  id: RenderTaskId
+  binaries: (Uint8Array<ArrayBufferLike> | undefined)[]
+  config: ReturnType<typeof useUserConfig>['current']
+}
+const useKitRenderer = () => {
+  const bus = useRef(
+    createEventBus<{
+      onNewTask: (task: RenderTask) => void
+    }>(),
+  )
+
+  const createNewTask = useCallback((slots: ReturnType<typeof useSlots>['slots'], config: ReturnType<typeof useUserConfig>['current']) => {
+    const binaries = slots.map((x) => (x.file?.type === 'present' ? x.file.bytes : undefined))
+    bus.current.emit('onNewTask', { id: crypto.randomUUID() as RenderTaskId, binaries, config })
+  }, [])
+
+  return {
+    eventBus: bus,
+    createNewTask,
+  }
+}
+
 export const useDrumKit = () => {
   const kits = useKit()
   const files = useKitAudio()
@@ -451,6 +477,7 @@ export const useDrumKit = () => {
   const config = useUserConfig(slots, kits)
   const fileDropping = useDragHandler(files.addFile)
   const selection = useSelection(files)
+  const kitRenderer = useKitRenderer()
 
   return {
     kits,
@@ -460,5 +487,6 @@ export const useDrumKit = () => {
     config,
     selection,
     fileDropping,
+    kitRenderer,
   }
 }

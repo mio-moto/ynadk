@@ -86,6 +86,15 @@ export const globalStyle = css`
       ${fragments.textStyle.heading.m};
     }
 
+    code {
+      white-space: nowrap;
+      border: 1px solid ${style.themeColors.line.default};
+      padding: 0 4px;
+      color: ${style.themeColors.text.important};
+      background-color: ${style.themeColors.background.default};
+
+    }
+
     #root {
       flex: 1;
       display: flex;

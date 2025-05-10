@@ -9,7 +9,8 @@ import { DrumKitFiles } from './features/Drumkit/DrumkitFiles'
 import { KitOrder } from './features/Drumkit/KitOrder'
 import { SampleTable } from './features/Drumkit/SampleTable'
 import { UserSettings } from './features/Drumkit/UserSettings'
-import { renderAudioKit } from './features/Drumkit/audioRenderer'
+
+import { RenderToast } from './features/Drumkit/RenderToast'
 import { UserGuide } from './features/UserGuide'
 
 type UUID = ReturnType<typeof window.crypto.randomUUID>
@@ -95,7 +96,6 @@ for (let i = 0; i < notes.length * octaves.length; i += 1) {
 export const App: FC = () => {
   const context = useDrumKit()
   const {
-    config: { kitName },
     slots: { slots },
     fileDropping: { isDropping },
   } = context
@@ -126,16 +126,7 @@ export const App: FC = () => {
               className="render"
               disabled={!slots.some((x) => x.file?.type === 'present')}
               onClick={() => {
-                const result = renderAudioKit(context)
-                const buffer = result.toBuffer()
-                const content = new Blob([buffer], { type: 'audio/wav' })
-                const encodedUri = window.URL.createObjectURL(content)
-                const link = document.createElement('a')
-                link.setAttribute('href', encodedUri)
-                const name = kitName.length > 0 ? kitName : 'kit'
-                link.setAttribute('download', `${name}.wav`)
-                link.click()
-                link.remove()
+                context.kitRenderer.createNewTask(context.slots.slots, context.config.current)
               }}
             >
               render
@@ -144,6 +135,7 @@ export const App: FC = () => {
           <DrumKitFiles context={context} />
         </div>
       </main>
+      <RenderToast context={context} />
       <DroppingOverlay isDropping={isDropping} />
     </div>
   )
