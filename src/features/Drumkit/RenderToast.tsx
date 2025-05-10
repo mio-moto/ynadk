@@ -18,6 +18,7 @@ const renderToastClass = css`
   gap: 8px;
 
   > .toast {
+    --line-color: ${style.themeColors.line.default};
     position: relative;
     display: flex;
     align-items: center;
@@ -25,7 +26,7 @@ const renderToastClass = css`
     width: 250px;
     padding: 12px 24px 12px 12px;
     background-color: ${style.themeColors.background.default};
-    outline: 1px solid ${style.themeColors.line.default};
+    outline: 1px solid var(--line-color);
 
     > .close {
       cursor: pointer;
@@ -47,12 +48,13 @@ const renderToastClass = css`
     }
 
     &.success {
-        cursor: pointer;
-        transition: ${fragments.transition.regular('background-color')};
-        &:hover {
-          background-color: ${style.themeColors.background.defaultHover};
-        }
+      --line-color: ${style.colors.lime.primary};
+      cursor: pointer;
+      transition: ${fragments.transition.regular('background-color')};
+      &:hover {
+        background-color: ${style.themeColors.background.defaultHover};
       }
+    }
 
     &::after {
       position: absolute;
@@ -62,12 +64,12 @@ const renderToastClass = css`
       left: 0;
       height: 3px;
       width: var(--progress);
-      background-color: ${style.themeColors.line.focus};
+      background-color: var(--line-color);
       transition: ${fragments.transition.regular('width')}, ${fragments.transition.regular('background-color')};
     }
 
     &.error::after {
-      background-color: ${style.themeColors.text.secondary};
+      --line-color: ${style.themeColors.text.secondary};
     }
   }
 `
