@@ -1,9 +1,9 @@
 import { css, cx } from '@linaria/core'
-import { type FC, type HTMLProps, useMemo, useRef, useState } from 'react'
+import { type FC, type HTMLProps, type RefObject, memo, useEffect, useMemo, useRef, useState } from 'react'
 import { fragments } from '../../app/style/fragments'
 import { style } from '../../app/style/style'
 import { Button } from '../../components/Button'
-import type { DrumKitContext } from './DrumkitContext'
+import type { DrumKitContext, KitAudio } from './DrumkitContext'
 
 const drumKitFilesClass = css`
   display: flex;
@@ -124,6 +124,76 @@ const drumKitFilesClass = css`
   }
 `
 
+const File: FC<
+  HTMLProps<HTMLDivElement> & {
+    file: KitAudio
+    highlight: DrumKitContext['highlight']
+    audioRef: RefObject<HTMLAudioElement | null>
+    selectedFiles: DrumKitContext['selection']['selectedFiles']
+    setSelection: DrumKitContext['selection']['setSelection']
+    removeFile: DrumKitContext['files']['removeFile']
+  }
+> = memo(({ highlight, file, selectedFiles, setSelection, removeFile, audioRef }) => {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (highlight.highlight?.id === file.id && highlight.highlight?.source !== 'file-list' && ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    }
+  }, [highlight.highlight, file.id])
+  return (
+    <div
+      ref={ref}
+      className={cx(
+        'file',
+        selectedFiles.some((y) => y.id === file.id) && 'selected',
+        highlight.highlight?.id === file.id && 'highlighted',
+        file.type,
+      )}
+      onClick={() => {
+        setSelection(file.id)
+      }}
+      onPointerEnter={() => {
+        highlight.setHighlight({ id: file.id, source: 'file-list' })
+      }}
+      onPointerLeave={() => {
+        if (file.id === highlight.highlight?.id) {
+          highlight.setHighlight(undefined)
+        }
+      }}
+    >
+      <span className="index">{file.index.toString().padStart(3, '0')}</span>
+      <span className="name">{file.type === 'present' ? file.name : 'removed'}</span>
+      {file.type === 'present' && (
+        <>
+          <Button
+            onClick={(evt) => {
+              evt.stopPropagation()
+              if (!audioRef.current || file.type !== 'present') {
+                return
+              }
+              const blob = new Blob([file.bytes], { type: 'audio/wav' })
+              audioRef.current.src = URL.createObjectURL(blob)
+              audioRef.current.play()
+            }}
+          >
+            &gt;
+          </Button>
+
+          <Button
+            className="close"
+            onClick={(evt) => {
+              evt.stopPropagation()
+              removeFile(file.id)
+            }}
+          >
+            x
+          </Button>
+        </>
+      )}
+    </div>
+  )
+})
+
 export const DrumKitFiles: FC<HTMLProps<HTMLDivElement> & { context: DrumKitContext }> = ({ className, context, ...props }) => {
   const {
     files: { files, meta, removeFile },
@@ -142,51 +212,15 @@ export const DrumKitFiles: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
 
         <div className="files">
           {files.map((x) => (
-            <div
+            <File
               key={x.id}
-              className={cx('file', selectedFiles.some((y) => y.id === x.id) && 'selected', highlight.highlight === x.id && 'highlighted', x.type)}
-              onClick={() => {
-                setSelection(x.id)
-              }}
-              onPointerEnter={() => {
-                highlight.setHighlight(x.id)
-              }}
-              onPointerLeave={() => {
-                if (x.id === highlight.highlight) {
-                  highlight.setHighlight(undefined)
-                }
-              }}
-            >
-              <span className="index">{x.index.toString().padStart(3, '0')}</span>
-              <span className="name">{x.type === 'present' ? x.name : 'removed'}</span>
-              {x.type === 'present' && (
-                <>
-                  <Button
-                    onClick={(evt) => {
-                      evt.stopPropagation()
-                      if (!audioRef.current || x.type !== 'present') {
-                        return
-                      }
-                      const blob = new Blob([x.bytes], { type: 'audio/wav' })
-                      audioRef.current.src = URL.createObjectURL(blob)
-                      audioRef.current.play()
-                    }}
-                  >
-                    &gt;
-                  </Button>
-
-                  <Button
-                    className="close"
-                    onClick={(evt) => {
-                      evt.stopPropagation()
-                      removeFile(x.id)
-                    }}
-                  >
-                    x
-                  </Button>
-                </>
-              )}
-            </div>
+              file={x}
+              highlight={highlight}
+              audioRef={audioRef}
+              selectedFiles={selectedFiles}
+              setSelection={setSelection}
+              removeFile={removeFile}
+            />
           ))}
         </div>
 

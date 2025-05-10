@@ -183,7 +183,7 @@ export const Slot: FC<
         slotClass,
         hitsStride && 'bl',
         kitIndex >= 0 && `kit-${kitIndex}`,
-        slot.file && slot.file.id === highlight && 'highlighted',
+        slot.file && slot.file.id === highlight?.id && 'highlighted',
         selectedFiles.length > 0 && 'selective',
         preview && 'preview',
         className,
@@ -204,7 +204,7 @@ export const Slot: FC<
       }}
       onPointerEnter={(ev) => {
         if (slot.file) {
-          setHighlight(slot.file?.id)
+          setHighlight({ id: slot.file?.id, source: 'slot' })
         }
         onPointerEnter?.(ev)
       }}
