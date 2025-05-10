@@ -321,7 +321,7 @@ const useUserConfig = (slots: ReturnType<typeof useSlots>, kit: ReturnType<typeo
 }
 
 const useHighlight = () => {
-  const [highlight, setHighlight] = useState<KitAudioId>()
+  const [highlight, setHighlight] = useState<{ id?: KitAudioId; source: string }>()
 
   return {
     highlight,
