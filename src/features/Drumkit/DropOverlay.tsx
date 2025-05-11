@@ -8,7 +8,7 @@ import { Icon } from '../../components/Icon'
 const dropOverlayClass = css`
   pointer-events: none;
   isolation: isolate;
-  position: absolute;
+  position: fixed;
   display: flex;
   justify-content: center;
   align-items: center;
