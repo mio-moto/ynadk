@@ -67,7 +67,7 @@ const appClass = css`
         flex: 1;
       }
       > .center {
-        flex: 1;
+        flex: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -79,6 +79,18 @@ const appClass = css`
           flex: 1;
           justify-self: stretch;
           align-self: stretch;
+        }
+
+        > .importer {
+          align-self: stretch;
+          display: flex;
+          gap: 24px;
+          > .file-selector {
+            display: none;
+          }
+          > .export, .import {
+            flex: 1;
+          }
         }
     }
   }
@@ -100,6 +112,7 @@ export const App: FC = () => {
     fileDropping: { isDropping },
   } = context
   const audioRef = useRef<HTMLAudioElement>(null)
+  const inputfileRef = useRef<HTMLInputElement>(null)
 
   const [forceUserGuide, setForceUserGuide] = useState(false)
 
@@ -131,6 +144,44 @@ export const App: FC = () => {
             >
               render
             </Button>
+
+            <div className="importer">
+              <input
+                type="file"
+                className="file-selector"
+                accept=".ynadk"
+                ref={inputfileRef}
+                onInput={async (evt) => {
+                  const file = evt.currentTarget.files?.[0]
+                  if (!file) {
+                    return
+                  }
+                  context.kitRenderer.createNewImport(await file.arrayBuffer())
+                }}
+                onClick={(evt) => {
+                  evt.currentTarget.value = ''
+                }}
+              />
+              <Button
+                className="import"
+                onClick={() => {
+                  if (!inputfileRef.current) {
+                    return
+                  }
+                  inputfileRef.current?.click()
+                }}
+              >
+                import
+              </Button>
+              <Button
+                className="export"
+                onClick={() => {
+                  context.kitRenderer.createNewExport(context)
+                }}
+              >
+                export
+              </Button>
+            </div>
           </div>
           <DrumKitFiles context={context} />
         </div>

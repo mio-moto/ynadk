@@ -32,13 +32,8 @@ const userSettingsClass = css`
     grid-column: 1 / -1;
   }
 
-  > .channel, > .mode {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-  }
 
-  > .bit-depth, > .sample-rate, > .normalize, > .stride {
+  > .channel, > .mode, > .bit-depth, > .sample-rate, > .normalize, > .stride {
     display: flex;
     justify-content: flex-end;
     gap: 8px;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { WaveFile } from 'wavefile'
 import { createEventBus } from '../../utils/events'
+import type { KitConfiguration } from './export'
 import { makeAudioMetaData } from './utils'
 
 export type UUID = ReturnType<typeof window.crypto.randomUUID>
@@ -51,6 +52,7 @@ const useKit = () => {
     kit,
     count,
     addKit,
+    setKit,
     removeKit,
     setKitCount,
     setKitName,
@@ -88,6 +90,7 @@ const useKitAudio = () => {
     meta,
     files,
     addFile,
+    setAudioFiles,
     removeFile,
   }
 }
@@ -176,6 +179,7 @@ const useSlots = (kit: ReturnType<typeof useKit>['kit'], kitAudio: ReturnType<ty
     meta,
     slots,
     assignFile,
+    setFileAssignment,
   }
 }
 
@@ -448,24 +452,52 @@ export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
 export type RenderTaskId = UUID & { __renderTaskUuid: never }
 export interface RenderTask {
   id: RenderTaskId
+  type: 'render'
   binaries: (Uint8Array<ArrayBufferLike> | undefined)[]
   config: ReturnType<typeof useUserConfig>['current']
 }
+
+export type ExportTaskId = UUID & { __exportTaskUuid: never }
+export interface ExportTask {
+  id: ExportTaskId
+  type: 'export'
+  context: DrumKitContext
+}
+
+export type ImportTaskId = UUID & { __importTaskUuid: never }
+export interface ImportTask {
+  id: ImportTaskId
+  type: 'import'
+  binary: ArrayBuffer
+}
+
 const useKitRenderer = () => {
   const bus = useRef(
     createEventBus<{
       onNewTask: (task: RenderTask) => void
+      onNewExport: (task: ExportTask) => void
+      onNewImport: (task: ImportTask) => void
     }>(),
   )
 
   const createNewTask = useCallback((slots: ReturnType<typeof useSlots>['slots'], config: ReturnType<typeof useUserConfig>['current']) => {
     const binaries = slots.map((x) => (x.file?.type === 'present' ? x.file.bytes : undefined))
-    bus.current.emit('onNewTask', { id: crypto.randomUUID() as RenderTaskId, binaries, config })
+    bus.current.emit('onNewTask', { type: 'render', id: crypto.randomUUID() as RenderTaskId, binaries, config })
+  }, [])
+
+  const createNewExport = useCallback((context: DrumKitContext) => {
+    bus.current.emit('onNewExport', { type: 'export', id: crypto.randomUUID() as ExportTaskId, context })
+  }, [])
+
+  const createNewImport = useCallback((binary: ArrayBuffer) => {
+    bus.current.emit('onNewImport', { type: 'import', id: crypto.randomUUID() as ImportTaskId, binary })
   }, [])
 
   return {
     eventBus: bus,
     createNewTask,
+    createNewExport,
+    createNewImport,
   }
 }
 
@@ -479,6 +511,31 @@ export const useDrumKit = () => {
   const selection = useSelection(files)
   const kitRenderer = useKitRenderer()
 
+  const importKit = useCallback(
+    (kit: KitConfiguration) => {
+      kits.setKit(kit.kit)
+      files.setAudioFiles(kit.files.map((x) => ({ ...x, type: 'present', wav: new WaveFile(x.bytes) })))
+      slots.setFileAssignment(kit.slots)
+      config.setBitDepth(kit.config.bitDepth)
+      config.setChannels(kit.config.channels)
+      config.setKitName(kit.config.kitName)
+      config.setNormalize(kit.config.normalize)
+      config.setSampleRate(kit.config.sampleRate)
+      config.setStride(kit.config.stride)
+    },
+    [
+      kits.setKit,
+      files.setAudioFiles,
+      slots.setFileAssignment,
+      config.setBitDepth,
+      config.setChannels,
+      config.setKitName,
+      config.setNormalize,
+      config.setSampleRate,
+      config.setStride,
+    ],
+  )
+
   return {
     kits,
     files,
@@ -488,5 +545,6 @@ export const useDrumKit = () => {
     selection,
     fileDropping,
     kitRenderer,
+    importKit,
   }
 }
