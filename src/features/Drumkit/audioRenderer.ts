@@ -115,7 +115,7 @@ const maxValueByBitDepth: Record<BitDepth, number> = {
   32: 2147483648,
 }
 
-const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDepth, targetSampleRate: number) => {
+const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDepth, targetSampleRate: number, normalize: boolean) => {
   if ((wav.fmt as WaveFormat).bitsPerSample !== targetBitDepth) {
     wav.toBitDepth(targetBitDepth.toString())
   }
@@ -131,7 +131,7 @@ const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDep
   const audioFrames = samples.length / numChannels
   const cookedAudio = new Float64Array(audioFrames * targetChannels)
   const maxValue = samples.reduce((prev, curr) => Math.max(prev, Math.abs(curr)), 0)
-  const factor = maxValueByBitDepth[targetBitDepth] / maxValue
+  const factor = normalize ? 1 : maxValueByBitDepth[targetBitDepth] / maxValue
 
   // go through all audio frames with each channel
   for (let i = 0; i < samples.length; i += numChannels) {
@@ -149,7 +149,7 @@ const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDep
       cookedAudio[idx + 1] = right * factor
     }
   }
-  return cookedAudio
+  return [cookedAudio, calculateSampleDuration(wav)] satisfies [Float64Array<ArrayBuffer>, number]
 }
 
 const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [
@@ -157,6 +157,11 @@ const createEmptyFrame = (bitDepth: BitDepth, channels: number) => [
     .keys()
     .map((_) => (bitDepth === 8 ? 64 : 0)),
 ]
+
+const calculateSampleDuration = (file: WaveFile) => {
+  const format = file.fmt as WaveFormat
+  return file.chunkSize / format.numChannels / format.sampleRate / (format.bitsPerSample / 8)
+}
 
 const collectFile = (file: WaveFile | undefined, index: number, lastIndex: number, emptyFile: WaveFile) => {
   if (index > lastIndex) {
@@ -181,16 +186,16 @@ export const renderAudioKit = (
   const collectedFiles = slots.map((x, i) => collectFile(x, i, lastIndex, emptyFile)).filter((x) => !!x)
 
   onUpdate({ type: 'update', progress: 1 })
-  const targetSamples: Float64Array<ArrayBuffer>[] = []
+  const targetSamples: [Float64Array<ArrayBuffer>, number][] = []
   for (const [index, sample] of collectedFiles.entries()) {
-    targetSamples.push(cookSample(sample, channels, bitDepth, sampleRate))
+    targetSamples.push(cookSample(sample, channels, bitDepth, sampleRate, currentConfig.normalize))
     // goes till 97%
     onUpdate({ type: 'update', progress: 1 + 89 * (index / (collectedFiles.length - 1)) })
   }
-  const sampleLength = targetSamples.reduce((a, b) => a + (b?.length ?? 0), 0)
+  const sampleLength = targetSamples.reduce((a, [b]) => a + (b?.length ?? 0), 0)
   const audioSamples = new Float64Array(sampleLength)
   let writtenLength = 0
-  for (const [index, sample] of targetSamples.entries()) {
+  for (const [index, [sample]] of targetSamples.entries()) {
     if (sample === undefined) {
       continue
     }
@@ -202,10 +207,11 @@ export const renderAudioKit = (
   const result = new WaveFile()
   result.fromScratch(channels, sampleRate, bitDepth.toString(), audioSamples)
   let lastCuePoint = 0
-  for (const file of targetSamples) {
-    const time = (file.length / sampleRate / channels) * 1000
+  for (const [_file, duration] of targetSamples) {
+    const time = duration * 1000
     result.setCuePoint({ position: lastCuePoint, end: null })
     lastCuePoint += time
   }
+  result.toRIFF()
   return result
 }

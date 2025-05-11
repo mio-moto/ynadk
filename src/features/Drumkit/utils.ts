@@ -4,6 +4,8 @@ export interface WaveFormat {
   numChannels: number
   sampleRate: number
   bitsPerSample: number
+  chunkSize: number
+  blockAlign: number
 }
 
 export const makeAudioMetaData = (audioFiles: WaveFile[]) => {
