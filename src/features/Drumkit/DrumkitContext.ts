@@ -183,7 +183,7 @@ const useSlots = (kit: ReturnType<typeof useKit>['kit'], kitAudio: ReturnType<ty
   }
 }
 
-const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile']) => {
+const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile'], importHandler: (binary: ArrayBuffer) => void) => {
   const [isDropping, setIsDropping] = useState(false)
   useEffect(() => {
     const dragHandler = (evt: DragEvent) => {
@@ -200,9 +200,13 @@ const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile']) => {
       setIsDropping(false)
       const files: Parameters<typeof addFile>[0][] = []
       let lastIndex = files.at(-1)?.index ?? 1
-      const droppedFiles = [...(evt.dataTransfer?.files ?? [])]
-        .filter((x) => x.name.toLowerCase().endsWith('wav'))
-        .toSorted((a, b) => (a.name > b.name ? 1 : -1))
+      const draggedFiles = [...(evt.dataTransfer?.files ?? [])]
+      const importFile = draggedFiles.find((x) => x.name.toLowerCase().endsWith('.ynadk'))
+      if (importFile) {
+        importHandler(await importFile.arrayBuffer())
+        return
+      }
+      const droppedFiles = draggedFiles.filter((x) => x.name.toLowerCase().endsWith('wav')).toSorted((a, b) => (a.name > b.name ? 1 : -1))
       for (const file of droppedFiles) {
         if (!file.name.toLowerCase().endsWith('.wav')) {
           continue
@@ -238,7 +242,7 @@ const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile']) => {
       document?.removeEventListener('dragend', dragEndHandler)
       document?.removeEventListener('dragleave', dragEndHandler)
     }
-  }, [addFile])
+  }, [addFile, importHandler])
 
   return {
     isDropping,
@@ -507,9 +511,9 @@ export const useDrumKit = () => {
   const slots = useSlots(kits.kit, files.files)
   const highlight = useHighlight()
   const config = useUserConfig(slots, kits)
-  const fileDropping = useDragHandler(files.addFile)
-  const selection = useSelection(files)
   const kitRenderer = useKitRenderer()
+  const fileDropping = useDragHandler(files.addFile, kitRenderer.createNewImport)
+  const selection = useSelection(files)
 
   const importKit = useCallback(
     (kit: KitConfiguration) => {
