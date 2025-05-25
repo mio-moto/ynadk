@@ -1,6 +1,6 @@
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: library code, allowed to do that
 export const createEventBus = <T extends Record<string, (...args: any[]) => void>>() => {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: library code, allowed to do that
   const eventMap = {} as Record<keyof T, Set<(...args: any[]) => void>>
 
   return {

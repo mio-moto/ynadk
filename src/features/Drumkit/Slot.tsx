@@ -138,7 +138,7 @@ const slotClass = css`
 
 export const Slot: FC<
   HTMLProps<HTMLDivElement> & { context: DrumKitContext; index: number; audio: RefObject<HTMLAudioElement | null>; preview: KitAudio | undefined }
-> = memo(({ context, index, audio, preview, className, onClick, onPointerEnter, onPointerLeave, ...props }) => {
+> = memo(({ context, index, audio, preview, className, onClick, onPointerEnter, onPointerLeave, onDrop, ...props }) => {
   const {
     slots: { slots, assignFile },
     config: {
@@ -213,6 +213,14 @@ export const Slot: FC<
           setHighlight(undefined)
         }
         onPointerLeave?.(ev)
+      }}
+      onDrop={(evt) => {
+        evt.preventDefault()
+        for (const [idx, selectedFile] of selectedFiles.entries()) {
+          assignFile(selectedFile.id, index + idx)
+        }
+        clearSelection()
+        onDrop?.(evt)
       }}
     >
       {kitName && <span className="kit-type">{kitName}</span>}

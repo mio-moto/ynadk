@@ -33,6 +33,7 @@ const drumKitFilesClass = css`
         gap: 8px;
         transition: ${fragments.transition.fast('color')};
         align-items: center;
+        user-select: auto;
         &.selected {
           color: ${style.themeColors.text.important};
         }
@@ -133,7 +134,7 @@ const File: FC<
     setSelection: DrumKitContext['selection']['setSelection']
     removeFile: DrumKitContext['files']['removeFile']
   }
-> = memo(({ highlight, file, selectedFiles, setSelection, removeFile, audioRef }) => {
+> = memo(({ highlight, file, selectedFiles, setSelection, removeFile, audioRef, ...props }) => {
   const ref = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (highlight.highlight?.id === file.id && highlight.highlight?.source !== 'file-list' && ref.current) {
@@ -152,6 +153,9 @@ const File: FC<
       onClick={() => {
         setSelection(file.id)
       }}
+      onDragStart={() => {
+        setSelection(file.id, { ctrl: true })
+      }}
       onPointerEnter={() => {
         highlight.setHighlight({ id: file.id, source: 'file-list' })
       }}
@@ -160,6 +164,7 @@ const File: FC<
           highlight.setHighlight(undefined)
         }
       }}
+      {...props}
     >
       <span className="index">{file.index.toString().padStart(3, '0')}</span>
       <span className="name">{file.type === 'present' ? file.name : 'removed'}</span>
@@ -220,6 +225,7 @@ export const DrumKitFiles: FC<HTMLProps<HTMLDivElement> & { context: DrumKitCont
               selectedFiles={selectedFiles}
               setSelection={setSelection}
               removeFile={removeFile}
+              draggable="true"
             />
           ))}
         </div>

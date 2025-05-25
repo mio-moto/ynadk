@@ -187,7 +187,11 @@ const useDragHandler = (addFile: ReturnType<typeof useKitAudio>['addFile'], impo
   const [isDropping, setIsDropping] = useState(false)
   useEffect(() => {
     const dragHandler = (evt: DragEvent) => {
+      if (!evt.dataTransfer?.types.includes('Files')) {
+        return
+      }
       evt.preventDefault()
+
       setIsDropping((value) => {
         if (!value) {
           return true
@@ -379,9 +383,10 @@ export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
   // - ctrl: (or alt) add individual selection of file
   // - click: just selection, clears multi-selection out
   const setSelection = useCallback(
-    (id: KitAudioId) => {
+    (id: KitAudioId, overrides?: Partial<{ shift: boolean; alt: boolean; ctrl: boolean; meta: boolean }>) => {
+      const mods = { ...modifiers.current, ...overrides }
       // no modifiers is just additive
-      if (!Object.values(modifiers.current).some((x) => x)) {
+      if (!Object.values(mods).some((x) => x)) {
         // clicking the same file with _one_ selection unselects all
         // if multiple files are clicked and a user clicks one file, then only one file is clicked
         // clicking again clears the selection
@@ -394,7 +399,7 @@ export const useSelection = (kitAudio: ReturnType<typeof useKitAudio>) => {
         return
       }
 
-      if (modifiers.current.shift) {
+      if (mods.shift) {
         const lastSelectedFile = selectedFiles?.at(-1)
         // no prior selection, only set that one that's been clicked
         if (!lastSelectedFile || lastSelectedFile === id) {

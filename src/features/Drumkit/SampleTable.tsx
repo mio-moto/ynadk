@@ -67,6 +67,9 @@ export const SampleTable: FC<HTMLProps<HTMLDivElement> & { context: DrumKitConte
                 audio={audioRef}
                 onPointerEnter={() => pointerLoc !== idx && selectedFiles.length > 0 && setPointerLoc(idx)}
                 onPointerLeave={() => pointerLoc !== undefined && selectedFiles.length > 0 && setPointerLoc(undefined)}
+                onDragEnter={() => pointerLoc !== idx && selectedFiles.length > 0 && setPointerLoc(idx)}
+                onDragLeave={() => pointerLoc !== undefined && selectedFiles.length > 0 && setPointerLoc(undefined)}
+                onDragOver={(evt) => evt.preventDefault()}
                 preview={preview}
               />
             )
