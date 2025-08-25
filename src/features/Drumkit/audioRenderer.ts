@@ -28,7 +28,7 @@ self.onmessage = (event: MessageEvent<RendererArgument>) => {
   const files = event.data.slots.map((x) => (x ? new WaveFile(x) : undefined))
   const result = renderAudioKit(files, event.data.config, (message) => postMessage(message))
   const buffer = result.toBuffer()
-  // @ts-expect-error
+  // @ts-ignore-error
   const content = new Blob([buffer], { type: 'audio/wav' })
   typedPostMessage({ type: 'success', data: content })
 }
