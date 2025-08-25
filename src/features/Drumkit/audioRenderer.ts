@@ -28,6 +28,7 @@ self.onmessage = (event: MessageEvent<RendererArgument>) => {
   const files = event.data.slots.map((x) => (x ? new WaveFile(x) : undefined))
   const result = renderAudioKit(files, event.data.config, (message) => postMessage(message))
   const buffer = result.toBuffer()
+  // @ts-expect-error
   const content = new Blob([buffer], { type: 'audio/wav' })
   typedPostMessage({ type: 'success', data: content })
 }
@@ -145,12 +146,8 @@ const maxValueByBitDepth: Record<BitDepth, number> = {
 }
 
 const cookSample = (wav: WaveFile, targetChannels: 1 | 2, targetBitDepth: BitDepth, targetSampleRate: number, normalize: boolean) => {
-  if ((wav.fmt as WaveFormat).bitsPerSample !== targetBitDepth) {
-    wav.toBitDepth(targetBitDepth.toString())
-  }
-  if ((wav.fmt as WaveFormat).sampleRate !== targetSampleRate) {
-    wav.toSampleRate(targetSampleRate, { method: 'sinc' })
-  }
+  wav.toBitDepth(targetBitDepth.toString())
+  wav.toSampleRate(targetSampleRate)
 
   // the library mutates the fmt object
   const { numChannels } = wav.fmt as WaveFormat
@@ -236,11 +233,9 @@ export const renderAudioKit = (
   const result = new WaveFile()
   result.fromScratch(channels, sampleRate, bitDepth.toString(), audioSamples)
   let lastCuePoint = 0
-  for (const [_file, duration] of targetSamples) {
-    const time = duration * 1000
-    result.setCuePoint({ position: lastCuePoint, end: null })
-    lastCuePoint += time
+  for (const [buffer, _length] of targetSamples) {
+    result.setCuePoint({ position: ((buffer.length + lastCuePoint) / sampleRate / channels) * 1_000 })
+    lastCuePoint += buffer.length
   }
-  result.toRIFF()
   return result
 }
