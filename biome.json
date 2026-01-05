@@ -12,7 +12,8 @@
       "vite.config.ts",
       "**/dist/**",
       "**/node_modules/**",
-      "src/utils/murmur.ts"
+      "src/utils/murmur.ts",
+      "src/wavefile/**"
     ],
     "include": [
       "src/**"

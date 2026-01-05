@@ -1,4 +1,4 @@
-import { WaveFile } from 'wavefile'
+import { WaveFile } from '../../wavefile'
 import type { BitDepth, DrumKitContext } from './DrumkitContext'
 import type { UserConfig } from './DrumkitContext'
 import type { WaveFormat } from './utils'
@@ -198,6 +198,7 @@ const collectFile = (file: WaveFile | undefined, index: number, lastIndex: numbe
   }
   return file
 }
+
 export const renderAudioKit = (
   slots: (WaveFile | undefined)[],
   currentConfig: DrumKitContext['config']['current'],
@@ -234,9 +235,11 @@ export const renderAudioKit = (
   const result = new WaveFile()
   result.fromScratch(channels, sampleRate, bitDepth.toString(), audioSamples)
   let lastCuePoint = 0
+  let index = 0;
   for (const [buffer, _length] of targetSamples) {
-    result.setCuePoint({ position: lastCuePoint === 0 ? 0 : (lastCuePoint / sampleRate / channels) * 1_000 })
+    result.setCuePoint({ position: lastCuePoint === 0 ? 0 : (lastCuePoint / sampleRate / channels) * 1_000, label: `${(index++).toString().padStart(3, '0')}` })
     lastCuePoint += buffer.length
   }
+  console.log(result.listCuePoints())
   return result
 }

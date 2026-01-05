@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { WaveFile } from 'wavefile'
 import { createEventBus } from '../../utils/events'
+import { WaveFile } from '../../wavefile'
 import type { KitConfiguration } from './export'
 import { makeAudioMetaData } from './utils'
 

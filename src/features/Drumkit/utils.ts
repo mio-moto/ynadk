@@ -1,4 +1,4 @@
-import type { WaveFile } from 'wavefile'
+import type { WaveFile } from '../../wavefile'
 
 export interface WaveFormat {
   numChannels: number
