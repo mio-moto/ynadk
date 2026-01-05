@@ -203,6 +203,7 @@ export const renderAudioKit = (
   currentConfig: DrumKitContext['config']['current'],
   onUpdate: (message: RendererMessage) => void,
 ) => {
+  slots.length = Math.min(slots.length, 128)
   onUpdate({ type: 'update', progress: 0 })
   const { channels, bitDepth, sampleRate } = currentConfig
   const emptyFile = new WaveFile()
@@ -233,9 +234,8 @@ export const renderAudioKit = (
   const result = new WaveFile()
   result.fromScratch(channels, sampleRate, bitDepth.toString(), audioSamples)
   let lastCuePoint = 0
-  result.setCuePoint({ position: 0 })
   for (const [buffer, _length] of targetSamples) {
-    result.setCuePoint({ position: ((buffer.length + lastCuePoint) / sampleRate / channels) * 1_000 })
+    result.setCuePoint({ position: lastCuePoint === 0 ? 0 : (lastCuePoint / sampleRate / channels) * 1_000 })
     lastCuePoint += buffer.length
   }
   return result
